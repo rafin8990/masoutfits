@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\About\AboutController;
+use App\Http\Controllers\Assets\CategoryController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Footer\FooterController;
 use App\Http\Controllers\Home\ContactController;
@@ -35,6 +36,9 @@ Route::get('/about/{id}', [AboutController::class, 'getAboutById']);
 
 Route::get('/footer', [FooterController::class, 'getAllFooters']);
 Route::get('/footer/{id}', [FooterController::class, 'getFooterById']);
+
+Route::get('/categories', [CategoryController::class, 'getAllCategories']);
+Route::get('/categories/{id}', [CategoryController::class, 'getCategoryById']);
 
 
 // Protected routes 
@@ -77,6 +81,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/footer', [FooterController::class, 'createFooter']);
     Route::put('/footer/{id}', [FooterController::class, 'updateFooter']);
     Route::delete('/footer/{id}', [FooterController::class, 'deleteFooter']);
+
+    Route::post('/categories', [CategoryController::class, 'createCategory']);
+    Route::put('/categories/{id}', [CategoryController::class, 'updateCategory']);
+    Route::delete('/categories/{id}', [CategoryController::class, 'deleteCategory']);
 
 
 
