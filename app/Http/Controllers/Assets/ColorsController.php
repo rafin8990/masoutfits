@@ -40,14 +40,14 @@ class ColorsController extends Controller
 
         $color->save();
 
-        return response()->json(['success' => true, 'message' => 'Color created successfully', 'color' => $color], 201);
+        return response()->json(['success' => true, 'message' => 'Color created successfully', 'data' => $color], 201);
     }
 
     public function getAllColors(Request $request)
     {
         $colors = Color::orderBy('created_at', 'desc')->get();
 
-        return response()->json(['success' => true, , 'message' => 'Colors fetched successfully', 'colors' => $colors], 200);
+        return response()->json(['success' => true, , 'message' => 'Colors fetched successfully', 'data' => $colors], 200);
     }
 
     public function getColorById($id)
@@ -58,7 +58,7 @@ class ColorsController extends Controller
             return response()->json(['success' => false, 'message' => 'Color not found'], 404);
         }
 
-        return response()->json(['success' => true, 'message' => 'Color fetched successfully', 'color' => $color], 200);
+        return response()->json(['success' => true, 'message' => 'Color fetched successfully', 'data' => $color], 200);
     }
     public function updateColor(Request $request, $id)
     {
@@ -103,7 +103,7 @@ class ColorsController extends Controller
 
         $color->save();
 
-        return response()->json(['success' => true, 'message' => 'Color updated successfully', 'color' => $color], 200);
+        return response()->json(['success' => true, 'message' => 'Color updated successfully', 'data' => $color], 200);
     }
     public function deleteColor($id)
     {
