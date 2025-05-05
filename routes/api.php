@@ -1,0 +1,86 @@
+<?php
+
+use App\Http\Controllers\About\AboutController;
+use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Footer\FooterController;
+use App\Http\Controllers\Home\ContactController;
+use App\Http\Controllers\Home\SectionOneController;
+use App\Http\Controllers\Home\SectionThreeController;
+use App\Http\Controllers\Home\SectionTwoController;
+use App\Http\Controllers\Home\SliderController;
+use Illuminate\Support\Facades\Route;
+
+// Public routes
+Route::post('/register', [AuthController::class, 'createUser']);
+Route::post('/login', [AuthController::class, 'login']);
+
+Route::get('/sliders', [SliderController::class, 'getAllSliders']);
+Route::get('/sliders/{id}', [SliderController::class, 'getSliderById']);
+
+Route::get('/section-one', [SectionOneController::class, 'getAllSectionOne']);
+Route::get('/section-one/{id}', [SectionOneController::class, 'getSectionOneById']);
+
+Route::get('/section-two', [SectionTwoController::class, 'getAllSectionTwo']);
+Route::get('/section-two/{id}', [SectionTwoController::class, 'getSectionTwoById']);
+
+
+Route::get('/section-three', [SectionThreeController::class, 'getAllSectionThree']);
+Route::get('/section-three/{id}', [SectionThreeController::class, 'getSectionThreeById']);
+
+Route::get('/contacts', [ContactController::class, 'getAllContact']);
+Route::get('/contacts/{id}', [ContactController::class, 'getContactById']);
+
+Route::get('/about', [AboutController::class, 'getAllAbout']);
+Route::get('/about/{id}', [AboutController::class, 'getAboutById']);
+
+Route::get('/footer', [FooterController::class, 'getAllFooters']);
+Route::get('/footer/{id}', [FooterController::class, 'getFooterById']);
+
+
+// Protected routes 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', [AuthController::class, 'getUser']);
+    Route::put('/user', [AuthController::class, 'updateUser']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::delete('/user/{id}', [AuthController::class, 'deleteUser']);
+    Route::get('/users', [AuthController::class, 'getAllUsers']);
+    Route::get('/user/email/{email}', [AuthController::class, 'getUserByEmail']);
+    Route::get('/user/id/{id}', [AuthController::class, 'getUserById']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
+
+    Route::post('/sliders', [SliderController::class, 'createSlider']);
+    Route::put('/sliders/{id}', [SliderController::class, 'updateSlider']);
+    Route::delete('/sliders/{id}', [SliderController::class, 'deleteSlider']);
+
+    Route::post('/section-one', [SectionOneController::class, 'createSectionOne']);
+    Route::put('/section-one/{id}', [SectionOneController::class, 'updateSectionOne']);
+    Route::delete('/section-one/{id}', [SectionOneController::class, 'deleteSectionOne']);
+    Route::delete('/section-one', [SectionOneController::class, 'deleteAllSectionOne']);
+
+    Route::post('/section-two', [SectionTwoController::class, 'createSectionTwo']);
+    Route::post('/section-two/{id}', [SectionTwoController::class, 'updateSectionTwo']);
+    Route::delete('/section-two/{id}', [SectionTwoController::class, 'destroy']);
+
+    Route::post('/section-three', [SectionThreeController::class, 'createSectionThree']);
+    Route::put('/section-three/{id}', [SectionThreeController::class, 'updateSectionThree']);
+    Route::delete('/section-three/{id}', [SectionThreeController::class, 'deleteSectionThree']);
+
+    Route::post('/contacts', [ContactController::class, 'createContact']);
+    Route::put('/contacts/{id}', [ContactController::class, 'updateContact']);
+    Route::delete('/contacts/{id}', [ContactController::class, 'deleteContact']);
+
+    Route::post('/about', [AboutController::class, 'createAbout']);
+    Route::put('/about/{id}', [AboutController::class, 'updateAbout']);
+    Route::delete('/about/{id}', [AboutController::class, 'deleteAbout']);
+
+
+    Route::post('/footer', [FooterController::class, 'createFooter']);
+    Route::put('/footer/{id}', [FooterController::class, 'updateFooter']);
+    Route::delete('/footer/{id}', [FooterController::class, 'deleteFooter']);
+
+
+
+
+
+});
+
