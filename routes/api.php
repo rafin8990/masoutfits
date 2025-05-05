@@ -5,6 +5,7 @@ use App\Http\Controllers\Assets\CategoryController;
 use App\Http\Controllers\Assets\ColorsController;
 use App\Http\Controllers\Assets\SizeController;
 use App\Http\Controllers\Assets\SubCategoryController;
+use App\Http\Controllers\Assets\TagController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Footer\FooterController;
 use App\Http\Controllers\Home\ContactController;
@@ -49,8 +50,11 @@ Route::get('/sub-categories/{id}', [SubCategoryController::class, 'getSubCategor
 Route::get('/colors', [ColorsController::class, 'getAllColors']);
 Route::get('/colors/{id}', [ColorsController::class, 'getColorById']);
 
-Route::get('/sizes', [SizeController::class, 'getAllSizes']);       
+Route::get('/sizes', [SizeController::class, 'getAllSizes']);
 Route::get('/sizes/{id}', [SizeController::class, 'getSizeById']);
+
+Route::get('/tags', [TagController::class, 'getAllTags']);
+Route::get('/tags/{id}', [TagController::class, 'getTagById']);
 
 
 // Protected routes 
@@ -106,8 +110,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/colors/{id}', [ColorsController::class, 'updateColor']);
     Route::delete('/colors/{id}', [ColorsController::class, 'deleteColor']);
 
-    Route::post('/sizes', [SizeController::class, 'createSize']);  
-    Route::put('/sizes/{id}', [SizeController::class, 'updateSize']); 
+    Route::post('/sizes', [SizeController::class, 'createSize']);
+    Route::put('/sizes/{id}', [SizeController::class, 'updateSize']);
     Route::delete('/sizes/{id}', [SizeController::class, 'deleteSize']);
+
+    Route::post('/tags', [TagController::class, 'createTag']);
+    Route::put('/tags/{id}', [TagController::class, 'updateTag']);
+    Route::delete('/tags/{id}', [TagController::class, 'deleteTag']);
 });
 

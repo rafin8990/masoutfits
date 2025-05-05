@@ -10,6 +10,10 @@ class SizeController extends Controller
 {
     public function createSize(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
         $request->validate([
             'name' => 'required|string|max:255',
         ]);
@@ -39,6 +43,10 @@ class SizeController extends Controller
     }
     public function updateSize(Request $request, $id)
     {
+        $user = auth()->user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
         $size = Size::find($id);
 
         if (!$size) {
@@ -56,6 +64,10 @@ class SizeController extends Controller
     }
     public function deleteSize($id)
     {
+        $user = auth()->user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
         $size = Size::find($id);
 
         if (!$size) {
@@ -67,4 +79,3 @@ class SizeController extends Controller
         return response()->json(['success' => true, 'message' => 'Size deleted successfully'], 200);
     }
 }
-    
