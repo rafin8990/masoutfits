@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\About\AboutController;
 use App\Http\Controllers\Assets\CategoryController;
+use App\Http\Controllers\Assets\ColorsController;
 use App\Http\Controllers\Assets\SubCategoryController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Footer\FooterController;
@@ -43,6 +44,9 @@ Route::get('/categories/{id}', [CategoryController::class, 'getCategoryById']);
 
 Route::get('/sub-categories', [SubCategoryController::class, 'getAllSubCategories']);
 Route::get('/sub-categories/{id}', [SubCategoryController::class, 'getSubCategoryById']);
+
+Route::get('/colors', [ColorsController::class, 'getAllColors']);
+Route::get('/colors/{id}', [ColorsController::class, 'getColorById']);
 
 
 // Protected routes 
@@ -94,7 +98,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/sub-categories/{id}', [SubCategoryController::class, 'updateSubCategory']);
     Route::delete('/sub-categories/{id}', [SubCategoryController::class, 'deleteSubCategory']);
 
-
+    Route::post('/colors', [ColorsController::class, 'createColor']);
+    Route::post('/colors/{id}', [ColorsController::class, 'updateColor']);
+    Route::delete('/colors/{id}', [ColorsController::class, 'deleteColor']);
 
 });
 
