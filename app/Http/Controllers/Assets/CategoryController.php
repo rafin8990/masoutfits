@@ -20,7 +20,7 @@ class CategoryController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $fullImageUrl = null;
+
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
@@ -32,14 +32,15 @@ class CategoryController extends Controller
 
             $image->move($destinationPath, $imageName);
 
-            $fullImageUrl = url('uploads/category/' . $imageName);
+            $fullImageUrl = url('public/uploads/category/' . $imageName);
+            $data['image'] = $fullImageUrl;
         }
 
 
-        $category = new Category();
-        $category->name = $data['name'];
-        $category->image = $fullImageUrl;
-        $category->save();
+        $category = Category::create($data);
+        if (!$category) {
+            return response()->json(['success' => false, 'message' => 'Failed to create category'], 500);
+        }
 
         return response()->json([
             'success' => true,
@@ -49,36 +50,37 @@ class CategoryController extends Controller
     }
 
     public function getAllCategories(Request $request)
-    {
-        try {
-            $categoryName = $request->query('category');
-            $searchTerm = $request->query('searchTerm');
+{
+    try {
+        $categoryName = $request->query('name');
+        $searchTerm = $request->query('searchTerm');
 
-            $query = Category::query();
+        $query = Category::query();
 
-            if ($categoryName) {
-                $query->where('name', $categoryName);
-            }
 
-            if ($searchTerm) {
-                $query->where('name', 'LIKE', '%' . $searchTerm . '%');
-            }
-
-            $categories = $query->orderBy('created_at', 'desc')->get();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Categories fetched successfully',
-                'data' => $categories,
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Something went wrong while fetching the categories.',
-                'error' => $e->getMessage(),
-            ], 500);
+        if (!empty($categoryName)) {
+            $query->where('name', $categoryName);
         }
+
+        if (!empty($searchTerm)) {
+            $query->where('name', 'LIKE', '%' . $searchTerm . '%');
+        }
+        
+        $categories = $query->orderBy('created_at', 'asc')->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Categories fetched successfully',
+            'data' => $categories,
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Something went wrong while fetching the categories.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
     public function getCategoryById($id)
     {
         $category = Category::find($id);
@@ -121,7 +123,7 @@ class CategoryController extends Controller
 
             $image->move($destinationPath, $imageName);
 
-            $fullImageUrl = url('uploads/category/' . $imageName);
+            $fullImageUrl = url('public/uploads/category/' . $imageName);
         }
 
         $category->name = $data['name'];

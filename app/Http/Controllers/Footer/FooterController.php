@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Footer;
 use App\Http\Controllers\Controller;
 use App\Models\Footer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class FooterController extends Controller
 {
@@ -16,18 +17,18 @@ class FooterController extends Controller
         }
 
         $data = $request->validate([
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'logo' => 'nullable|image|max:2048',
             'icons' => 'nullable|array',
             'icons.*.name' => 'nullable|string',
             'icons.*.link' => 'nullable|string',
-            'icons.*.icon' => 'nullable|string',
+            'icons.*.icon' => 'nullable|file|mimes:svg,svg+xml|max:2048',
             'addresses' => 'nullable|array',
             'addresses.*.address_name' => 'nullable|string',
             'addresses.*.address_details' => 'nullable|string',
             'addresses.*.phone_number' => 'nullable|string',
         ]);
 
-        $fullLogoUrl = null;
+        // Handle logo upload
         if ($request->hasFile('logo')) {
             $logo = $request->file('logo');
             $logoName = time() . '_' . uniqid() . '.' . $logo->getClientOriginalExtension();
@@ -39,15 +40,30 @@ class FooterController extends Controller
 
             $logo->move($destinationPath, $logoName);
 
-            $fullLogoUrl = url('uploads/footer/' . $logoName);
+            $fullLogoUrl = url('public/uploads/footer/' . $logoName);
+            $data['logo'] = $fullLogoUrl;
         }
 
+        // Handle icons upload
+        if (isset($data['icons']) && is_array($data['icons'])) {
+            foreach ($data['icons'] as $key => $icon) {
+                if (isset($icon['icon']) && $icon['icon'] instanceof \Illuminate\Http\UploadedFile) {
+                    $iconFile = $icon['icon'];
+                    $iconName = time() . '_' . uniqid() . '.' . $iconFile->getClientOriginalExtension();
 
-        $footer = new Footer();
-        $footer->logo = $fullLogoUrl;
-        $footer->icons = $data['icons'] ?? [];
-        $footer->addresses = $data['addresses'] ?? [];
-        $footer->save();
+                    $destinationPath = public_path('uploads/footer/icons');
+                    if (!file_exists($destinationPath)) {
+                        mkdir($destinationPath, 0755, true);
+                    }
+
+                    $iconFile->move($destinationPath, $iconName);
+
+                    $data['icons'][$key]['icon'] = url('public/uploads/footer/icons/' . $iconName);
+                }
+            }
+        }
+
+        $footer = Footer::create($data);
 
         return response()->json([
             'success' => true,
@@ -106,7 +122,7 @@ class FooterController extends Controller
 
             $logo->move($destinationPath, $logoName);
 
-            $fullLogoUrl = url('uploads/footer/' . $logoName);
+            $fullLogoUrl = url('public/uploads/footer/' . $logoName);
         }
 
         $footer->logo = $fullLogoUrl ?? $footer->logo;

@@ -33,7 +33,7 @@ class SectionThreeController extends Controller
                 }
 
                 $image->move($destinationPath, $imageName);
-                $fullImageUrl = url('uploads/sections/' . $imageName);
+                $fullImageUrl = url('public/uploads/sections/' . $imageName);
                 $validatedData['image'] = $fullImageUrl;
             }
 
@@ -104,7 +104,7 @@ class SectionThreeController extends Controller
                 }
 
                 $image->move($destinationPath, $imageName);
-                $fullImageUrl = url('uploads/sections/' . $imageName);
+                $fullImageUrl = url('public/uploads/sections/' . $imageName);
                 $validatedData['image'] = $fullImageUrl;
             }
 

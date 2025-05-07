@@ -78,7 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/section-one', [SectionOneController::class, 'deleteAllSectionOne']);
 
     Route::post('/section-two', [SectionTwoController::class, 'createSectionTwo']);
-    Route::post('/section-two/{id}', [SectionTwoController::class, 'updateSectionTwo']);
+    Route::put('/section-two/{id}', [SectionTwoController::class, 'updateSectionTwo']);
     Route::delete('/section-two/{id}', [SectionTwoController::class, 'destroy']);
 
     Route::post('/section-three', [SectionThreeController::class, 'createSectionThree']);

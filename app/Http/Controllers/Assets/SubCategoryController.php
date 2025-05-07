@@ -33,7 +33,7 @@ class SubCategoryController extends Controller
 
                 $image->move($destinationPath, $imageName);
 
-                $validated['image'] = url('uploads/subcategory/' . $imageName);
+                $validated['image'] = url('public/uploads/subcategory/' . $imageName);
             }
 
             $subCategory = SubCategory::create($validated);
@@ -62,17 +62,22 @@ class SubCategoryController extends Controller
     public function getAllSubCategories(Request $request)
     {
         try {
-            $categoryName = $request->query('category');
+            $categoryId = $request->query('category');
+            $categoryName = $request->query('name');
             $subCategoryName = $request->query('subCategory');
             $searchTerm = $request->query('searchTerm');
 
-            $query = SubCategory::query();
+            $query = SubCategory::with('category');
 
             if ($categoryName) {
                 $query->whereHas('category', function ($q) use ($categoryName) {
                     $q->where('name', $categoryName);
                 });
             }
+            if ($categoryId) {
+                $query->where('category_id', $categoryId);
+            }
+
 
             if ($subCategoryName) {
                 $query->where('name', $subCategoryName);
@@ -149,7 +154,7 @@ class SubCategoryController extends Controller
 
                 $image->move($destinationPath, $imageName);
 
-                $validated['image'] = url('uploads/subcategory/' . $imageName);
+                $validated['image'] = url('public/uploads/subcategory/' . $imageName);
             }
 
             $subCategory->update($validated);

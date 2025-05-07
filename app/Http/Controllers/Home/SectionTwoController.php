@@ -50,7 +50,7 @@ class SectionTwoController extends Controller
 
                 $image->move($destinationPath, $imageName);
 
-                $validated['sections'][$key]['image'] = url('uploads/sections/' . $imageName);
+                $validated['sections'][$key]['image'] = url('public/uploads/sections/' . $imageName);
             }
 
             $sectionTwo = SectionTwo::create([
@@ -119,21 +119,21 @@ class SectionTwoController extends Controller
             if (!$user || $user->role !== 'admin') {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
-
+    
             $sectionTwo = SectionTwo::find($id);
             if (!$sectionTwo) {
                 return response()->json(['success' => false, 'message' => 'Section Two not found'], 404);
             }
-
+    
             $validator = Validator::make($request->all(), [
                 'title' => 'nullable|string',
                 'description' => 'nullable|string',
-                'sections' => 'required|array',
-                'sections.*.title' => 'required|string',
-                'sections.*.short_des' => 'required|string',
+                'sections' => 'nullable|array',
+                'sections.*.title' => 'nullable|string',
+                'sections.*.short_des' => 'nullable|string',
                 'sections.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
-
+    
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
@@ -141,37 +141,39 @@ class SectionTwoController extends Controller
                     'errors' => $validator->errors(),
                 ], 422);
             }
-
+    
             $validated = $validator->validated();
-
-            foreach ($validated['sections'] as $key => $section) {
-                if (isset($section['image'])) {
-                    $image = $section['image'];
-                    $imageName = time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
-
-                    $destinationPath = public_path('uploads/sections');
-                    if (!file_exists($destinationPath)) {
-                        mkdir($destinationPath, 0755, true);
+    
+            if (isset($validated['sections']) && is_array($validated['sections'])) {
+                foreach ($validated['sections'] as $key => $section) {
+                    if (isset($section['image'])) {
+                        $image = $section['image'];
+                        $imageName = time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
+    
+                        $destinationPath = public_path('uploads/sections');
+                        if (!file_exists($destinationPath)) {
+                            mkdir($destinationPath, 0755, true);
+                        }
+    
+                        $image->move($destinationPath, $imageName);
+    
+                        $validated['sections'][$key]['image'] = url('uploads/sections/' . $imageName);
                     }
-
-                    $image->move($destinationPath, $imageName);
-
-                    $validated['sections'][$key]['image'] = url('uploads/sections/' . $imageName);
                 }
             }
-
+    
             $sectionTwo->update([
-                'title' => $validated['title'] ?? null,
-                'description' => $validated['description'] ?? null,
-                'sections' => $validated['sections'],
+                'title' => $validated['title'] ?? $sectionTwo->title,
+                'description' => $validated['description'] ?? $sectionTwo->description,
+                'sections' => $validated['sections'] ?? $sectionTwo->sections,
             ]);
-
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Section Two updated successfully',
                 'data' => $sectionTwo,
             ], 200);
-
+    
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

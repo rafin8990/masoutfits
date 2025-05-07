@@ -31,7 +31,7 @@ class SliderController extends Controller
 
             $image->move($destinationPath, $imageName);
 
-            $fullImageUrl = url('uploads/sliders/' . $imageName);
+            $fullImageUrl = url('public/uploads/sliders/' . $imageName);
             $validatedData['image'] = $fullImageUrl;
         }
 
@@ -91,7 +91,7 @@ class SliderController extends Controller
 
             $image->move($destinationPath, $imageName);
 
-            $fullImageUrl = url('uploads/sliders/' . $imageName);
+            $fullImageUrl = url('public/uploads/sliders/' . $imageName);
             $validatedData['image'] = $fullImageUrl;
         }
 
