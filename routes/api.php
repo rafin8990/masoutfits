@@ -107,7 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/sub-categories/{id}', [SubCategoryController::class, 'deleteSubCategory']);
 
     Route::post('/colors', [ColorsController::class, 'createColor']);
-    Route::post('/colors/{id}', [ColorsController::class, 'updateColor']);
+    Route::put('/colors/{id}', [ColorsController::class, 'updateColor']);
     Route::delete('/colors/{id}', [ColorsController::class, 'deleteColor']);
 
     Route::post('/sizes', [SizeController::class, 'createSize']);

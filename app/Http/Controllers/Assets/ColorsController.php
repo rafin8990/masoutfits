@@ -10,19 +10,19 @@ class ColorsController extends Controller
 {
     public function createColor(Request $request)
     {
+
+        // dd($request->all());
+
         $user = auth()->user();
         if (!$user || $user->role !== 'admin') {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:12',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
-
-        $color = new Color();
-        $color->name = $validated['name'];
-        $color->code = $validated['code'];
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
@@ -35,19 +35,23 @@ class ColorsController extends Controller
 
             $image->move($destinationPath, $imageName);
 
-            $color->image = url('uploads/colors/' . $imageName);
+            $validated['image'] = url('public/uploads/colors/' . $imageName);
         }
 
-        $color->save();
+        $validated = array_filter($validated, function ($value) {
+            return $value !== null && $value !== '';
+        });
+
+        $color = Color::create($validated);
 
         return response()->json(['success' => true, 'message' => 'Color created successfully', 'data' => $color], 201);
     }
 
-    public function getAllColors(Request $request)
+ public function getAllColors(Request $request)
     {
         $colors = Color::orderBy('created_at', 'desc')->get();
 
-        return response()->json(['success' => true, , 'message' => 'Colors fetched successfully', 'data' => $colors], 200);
+        return response()->json(['success' => true,'message' => 'Colors fetched successfully', 'data' => $colors], 200);
     }
 
     public function getColorById($id)
@@ -98,7 +102,7 @@ class ColorsController extends Controller
 
             $image->move($destinationPath, $imageName);
 
-            $color->image = url('uploads/colors/' . $imageName);
+            $color->image = url('public/uploads/colors/' . $imageName);
         }
 
         $color->save();
@@ -120,6 +124,6 @@ class ColorsController extends Controller
         $color->delete();
 
         return response()->json(['success' => true, 'message' => 'Color deleted successfully'], 200);
-    }
+    } 
 
 }
