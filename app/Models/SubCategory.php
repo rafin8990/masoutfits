@@ -18,4 +18,14 @@ class SubCategory extends Model
     {
         return $this->belongsTo(Category::class);
     }
+
+    public function sizeGuide()
+    {
+        return $this->hasMany(SizeGuide::class);
+    }
+
+    public function products()
+{
+    return $this->hasMany(Product::class);
+}
 }

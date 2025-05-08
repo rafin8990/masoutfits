@@ -4,6 +4,7 @@ use App\Http\Controllers\About\AboutController;
 use App\Http\Controllers\Assets\CategoryController;
 use App\Http\Controllers\Assets\ColorsController;
 use App\Http\Controllers\Assets\SizeController;
+use App\Http\Controllers\Assets\SizeGuideController;
 use App\Http\Controllers\Assets\SubCategoryController;
 use App\Http\Controllers\Assets\TagController;
 use App\Http\Controllers\Auth\AuthController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Home\SectionOneController;
 use App\Http\Controllers\Home\SectionThreeController;
 use App\Http\Controllers\Home\SectionTwoController;
 use App\Http\Controllers\Home\SliderController;
+use App\Http\Controllers\Product\ProductController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -55,6 +57,9 @@ Route::get('/sizes/{id}', [SizeController::class, 'getSizeById']);
 
 Route::get('/tags', [TagController::class, 'getAllTags']);
 Route::get('/tags/{id}', [TagController::class, 'getTagById']);
+
+Route::get('/size-guide', [SizeGuideController::class, 'getAllSizeGuide']);
+Route::get('/size-guide/{id}', [SizeGuideController::class, 'getSizeGuideById']);
 
 
 // Protected routes 
@@ -117,5 +122,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tags', [TagController::class, 'createTag']);
     Route::put('/tags/{id}', [TagController::class, 'updateTag']);
     Route::delete('/tags/{id}', [TagController::class, 'deleteTag']);
+
+    Route::post('/size-guide', [SizeGuideController::class, 'createSizeGuide']);
+    Route::put('/size-guide/{id}', [SizeGuideController::class, 'updateSizeGuide']);
+    Route::delete('/size-guide/{id}', [SizeGuideController::class, 'deleteSizeGuide']);
+
+    Route::post('/product', [ProductController::class, 'createProduct']);
+    Route::post('/availability/{productId}', [ProductController::class, 'addProductAvailability']);
+    Route::post('/product/{productId}', [ProductController::class, 'addProductImages']);
 });
 

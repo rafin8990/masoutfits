@@ -31,7 +31,7 @@ class AboutController extends Controller
 
         $image->move($destinationPath, $imageName);
 
-        $fullImageUrl = url('uploads/about/' . $imageName);
+        $fullImageUrl = url('public/uploads/about/' . $imageName);
 
         $about = new About();
         $about->title = $data['title'];
@@ -99,7 +99,7 @@ class AboutController extends Controller
 
             $image->move($destinationPath, $imageName);
 
-            $fullImageUrl = url('uploads/about/' . $imageName);
+            $fullImageUrl = url('public/uploads/about/' . $imageName);
             $data['image'] = $fullImageUrl;
         }
 

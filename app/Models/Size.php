@@ -11,4 +11,9 @@ class Size extends Model
     protected $fillable = [
         'name',
     ];
+
+    public function availabilities()
+{
+    return $this->hasMany(Availability::class);
+}
 }
