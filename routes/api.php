@@ -61,6 +61,9 @@ Route::get('/tags/{id}', [TagController::class, 'getTagById']);
 Route::get('/size-guide', [SizeGuideController::class, 'getAllSizeGuide']);
 Route::get('/size-guide/{id}', [SizeGuideController::class, 'getSizeGuideById']);
 
+Route::get('/product', [ProductController::class, 'getAllProducts']);
+Route::get('/product/{id}', [ProductController::class, 'getProductById']);
+
 
 // Protected routes 
 Route::middleware('auth:sanctum')->group(function () {
@@ -129,6 +132,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/product', [ProductController::class, 'createProduct']);
     Route::post('/availability/{productId}', [ProductController::class, 'addProductAvailability']);
-    Route::post('/product/{productId}', [ProductController::class, 'addProductImages']);
+    Route::post('/product/image/{productId}', [ProductController::class, 'addProductImages']);
 });
 

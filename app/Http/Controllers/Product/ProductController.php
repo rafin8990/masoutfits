@@ -4,8 +4,6 @@ namespace App\Http\Controllers\Product;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
-use App\Models\Availability;
-use App\Models\ProductImage;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -84,7 +82,7 @@ class ProductController extends Controller
             ]);
         }
 
-        return response()->json(['message' => 'Availability added successfully'], 200);
+        return response()->json(['success' => true, 'message' => 'Availability added successfully', 'data' => $product], 200);
     }
 
     public function addProductImages(Request $request, $productId)
@@ -97,28 +95,124 @@ class ProductController extends Controller
         $validated = $request->validate([
             'images' => 'required|array',
             'images.*.color_id' => 'required|exists:colors,id',
-            'images.*.image' => 'required|file|mimes:jpg,jpeg,png,webp|max:2048',
+            'images.*.image' => 'required|array',
+            'images.*.image.*' => 'required|file|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $product = Product::findOrFail($productId);
 
-        foreach ($request->file('images') as $index => $imageData) {
-            $colorId = $validated['images'][$index]['color_id'];
-            $imageFile = $imageData['image'];
+        // dd($validated['images']);
+        foreach ($validated['images'] as $index => $imageGroup) {
+            $colorId = $imageGroup['color_id'];
+            $imageFiles = $request->file("images.$index.image");
 
-            $fileName = time() . '_' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
-            $destinationPath = public_path('product_images');
-            $imageFile->move($destinationPath, $fileName);
+            foreach ($imageFiles as $imageFile) {
+                $fileName = time() . '_' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
+                $destinationPath = public_path('product_images');
+                $imageFile->move($destinationPath, $fileName);
 
-            $url = asset('product_images/' . $fileName);
+                $url = asset('public/product_images/' . $fileName);
 
-            $product->productImages()->create([
-                'color_id' => $colorId,
-                'image' => $url,
-            ]);
+                $product->productImages()->create([
+                    'color_id' => $colorId,
+                    'image' => $url,
+                ]);
+            }
         }
 
         return response()->json(['success' => true, 'message' => 'Product images uploaded successfully.', 'data' => $product], 200);
     }
+
+
+    public function getAllProducts(Request $request)
+    {
+        $query = Product::with([
+            'category',
+            'subCategory',
+            'tags',
+            'productImages',
+            'availability',
+            'sizeGuide'
+        ]);
+
+        if ($request->has('category')) {
+            $query->where('category_id', $request->get('category'));
+        }
+        if ($request->has('sub-category')) {
+            $query->where('sub_category_id', $request->get('sub-category'));
+        }
+
+        $products = $query->get();
+        return response()->json([
+            'success' => true,
+            'message' => 'Products retrieved successfully.',
+            'data' => $products
+        ], 200);
+    }
+
+    public function getProductById($id)
+    {
+        $product = Product::with(['category', 'subCategory', 'tags', 'productImages', 'availability', 'sizeGuide'])->findOrFail($id);
+        return response()->json([
+            'success' => true,
+            'message' => 'Product retrieved successfully.',
+            'data' => $product
+        ], 200);
+    }
+
+    public function updateProduct(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validatedData = $request->validate([
+            'name' => 'required|string',
+            'description' => 'nullable|string',
+            'fit' => 'nullable|string',
+            'care' => 'nullable|string',
+            'category_id' => 'required|exists:categories,id',
+            'sub_category_id' => 'required|exists:sub_categories,id',
+            'tag_ids' => 'array',
+            'tag_ids.*' => 'exists:tags,id',
+            'size_guide_ids' => 'array',
+            'size_guide_ids.*' => 'exists:size_guide,id',
+        ]);
+
+        $product = Product::findOrFail($id);
+        $product->update($validatedData);
+
+        if (!empty($validatedData['tag_ids'])) {
+            $product->tags()->sync($validatedData['tag_ids']);
+        }
+
+        if (!empty($validatedData['size_guide_ids'])) {
+            $product->sizeGuide()->sync($validatedData['size_guide_ids']);
+        }
+        
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Product updated successfully.',
+            'data' => $product
+        ], 200);
+    }
+    public function deleteProduct($id)
+    {
+        $user = auth()->user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $product = Product::findOrFail($id);
+        $product->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Product deleted successfully.'
+        ], 200);
+    }
+
 
 }
