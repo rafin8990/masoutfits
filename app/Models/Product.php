@@ -44,13 +44,18 @@ class Product extends Model
         return $this->belongsToMany(SizeGuide::class, 'product_size_guide');
     }
 
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
+    }
+
     protected $with = [
         'category',
         'subCategory',
         'tags',
         'productImages.color',
-        'availability.color',  
-        'availability.size',   
+        'availability.color',
+        'availability.size',
         'sizeGuide'
     ];
 }

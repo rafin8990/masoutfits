@@ -190,13 +190,81 @@ class ProductController extends Controller
         if (!empty($validatedData['size_guide_ids'])) {
             $product->sizeGuide()->sync($validatedData['size_guide_ids']);
         }
-        
+
 
         return response()->json([
             'success' => true,
             'message' => 'Product updated successfully.',
             'data' => $product
         ], 200);
+    }
+
+    public function updateProductAvailability(Request $request, $productId)
+    {
+        $user = auth()->user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'availability' => 'required|array',
+            'availability.*.id' => 'required|exists:availabilities,id',
+            'availability.*.size_id' => 'required|exists:sizes,id',
+            'availability.*.color_id' => 'required|exists:colors,id',
+            'availability.*.quantity' => 'required|integer|min:0',
+        ]);
+
+        $product = Product::findOrFail($productId);
+
+        foreach ($validated['availability'] as $item) {
+            $availability = $product->availability()->findOrFail($item['id']);
+            $availability->update([
+                'size_id' => $item['size_id'],
+                'color_id' => $item['color_id'],
+                'quantity' => $item['quantity'],
+            ]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Availability updated successfully', 'data' => $product], 200);
+    }
+
+    public function updateProductImages(Request $request, $productId)
+    {
+        $user = auth()->user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'images' => 'required|array',
+            'images.*.id' => 'required|exists:product_images,id',
+            'images.*.color_id' => 'required|exists:colors,id',
+            'images.*.image' => 'required|array',
+            'images.*.image.*' => 'required|file|mimes:jpg,jpeg,png,webp|max:2048',
+        ]);
+
+        $product = Product::findOrFail($productId);
+
+        foreach ($validated['images'] as $index => $imageGroup) {
+            $colorId = $imageGroup['color_id'];
+            $imageFiles = $request->file("images.$index.image");
+
+            foreach ($imageFiles as $imageFile) {
+                $fileName = time() . '_' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
+                $destinationPath = public_path('product_images');
+                $imageFile->move($destinationPath, $fileName);
+
+                $url = asset('public/product_images/' . $fileName);
+
+                $productImage = $product->productImages()->findOrFail($imageGroup['id']);
+                $productImage->update([
+                    'color_id' => $colorId,
+                    'image' => $url,
+                ]);
+            }
+        }
+
+        return response()->json(['success' => true, 'message' => 'Product images updated successfully.', 'data' => $product], 200);
     }
     public function deleteProduct($id)
     {

@@ -8,6 +8,7 @@ use App\Http\Controllers\Assets\SizeGuideController;
 use App\Http\Controllers\Assets\SubCategoryController;
 use App\Http\Controllers\Assets\TagController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Cart\CartController;
 use App\Http\Controllers\Footer\FooterController;
 use App\Http\Controllers\Home\ContactController;
 use App\Http\Controllers\Home\SectionOneController;
@@ -133,5 +134,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/product', [ProductController::class, 'createProduct']);
     Route::post('/availability/{productId}', [ProductController::class, 'addProductAvailability']);
     Route::post('/product/image/{productId}', [ProductController::class, 'addProductImages']);
+    Route::put('/product/{id}', [ProductController::class, 'updateProduct']);
+    Route::put('/product/image/{id}', [ProductController::class, 'updateProductImage']);
+    Route::put('/product/availability/{id}', [ProductController::class, 'updateProductAvailability']);
+    Route::delete('/product/{id}', [ProductController::class, 'deleteProduct']);
+
+
+     Route::post('/cart/add', [CartController::class, 'addToCart']);
+     Route::get('/cart', [CartController::class, 'getCartItems']);
+     Route::delete('/cart/{id}', [CartController::class, 'removeFromCart']);
+     Route::delete('/cart', [CartController::class, 'clearCart']);
+     Route::put('/cart/{id}', [CartController::class, 'updateCartItem']);
+    Route::get('/cart-count', [CartController::class, 'getCartItemCount']);
 });
 
