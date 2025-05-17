@@ -66,6 +66,14 @@ Route::get('/product', [ProductController::class, 'getAllProducts']);
 Route::get('/product/{id}', [ProductController::class, 'getProductById']);
 
 
+     Route::post('/cart/add', [CartController::class, 'addToCart']);
+     Route::get('/cart', [CartController::class, 'getCartItems']);
+     Route::delete('/cart/{id}', [CartController::class, 'removeFromCart']);
+     Route::delete('/cart', [CartController::class, 'clearCart']);
+     Route::put('/cart/{id}', [CartController::class, 'updateCartItem']);
+    Route::get('/cart-count', [CartController::class, 'getCartItemCount']);
+
+
 // Protected routes 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'getUser']);
@@ -138,13 +146,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/product/image/{id}', [ProductController::class, 'updateProductImage']);
     Route::put('/product/availability/{id}', [ProductController::class, 'updateProductAvailability']);
     Route::delete('/product/{id}', [ProductController::class, 'deleteProduct']);
+    Route::post('/product/with-availability', [ProductController::class,'createProductWithAvailability']);
 
 
-     Route::post('/cart/add', [CartController::class, 'addToCart']);
-     Route::get('/cart', [CartController::class, 'getCartItems']);
-     Route::delete('/cart/{id}', [CartController::class, 'removeFromCart']);
-     Route::delete('/cart', [CartController::class, 'clearCart']);
-     Route::put('/cart/{id}', [CartController::class, 'updateCartItem']);
-    Route::get('/cart-count', [CartController::class, 'getCartItemCount']);
+
 });
 

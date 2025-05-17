@@ -48,6 +48,7 @@ class Product extends Model
     {
         return $this->hasMany(CartItem::class);
     }
+   
 
     protected $with = [
         'category',

@@ -7,22 +7,37 @@ use Illuminate\Database\Eloquent\Model;
 class CartItem extends Model
 {
     protected $fillable = [
-        'user_id', 'product_id', 'color_id', 'size_id', 'quantity', 'price'
+        'user_id',
+        'session_id',   // ✅ Support for guest carts
+        'product_id',
+        'color_id',
+        'size_id',
+        'quantity',
+        'price',
     ];
 
-    public function user() {
+    protected $casts = [
+        'quantity' => 'integer',
+        'price' => 'float',
+    ];
+
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
 
-    public function product() {
+    public function product()
+    {
         return $this->belongsTo(Product::class);
     }
 
-    public function color() {
+    public function color()
+    {
         return $this->belongsTo(Color::class);
     }
 
-    public function size() {
+    public function size()
+    {
         return $this->belongsTo(Size::class);
     }
 }
