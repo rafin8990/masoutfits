@@ -8,7 +8,7 @@ class CartItem extends Model
 {
     protected $fillable = [
         'user_id',
-        'session_id',   // ✅ Support for guest carts
+        'guest_id',   
         'product_id',
         'color_id',
         'size_id',

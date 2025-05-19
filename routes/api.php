@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'createUser']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 Route::get('/sliders', [SliderController::class, 'getAllSliders']);
 Route::get('/sliders/{id}', [SliderController::class, 'getSliderById']);
@@ -66,12 +66,14 @@ Route::get('/product', [ProductController::class, 'getAllProducts']);
 Route::get('/product/{id}', [ProductController::class, 'getProductById']);
 
 
-     Route::post('/cart/add', [CartController::class, 'addToCart']);
-     Route::get('/cart', [CartController::class, 'getCartItems']);
-     Route::delete('/cart/{id}', [CartController::class, 'removeFromCart']);
-     Route::delete('/cart', [CartController::class, 'clearCart']);
-     Route::put('/cart/{id}', [CartController::class, 'updateCartItem']);
-    Route::get('/cart-count', [CartController::class, 'getCartItemCount']);
+Route::prefix('cart')->group(function () {
+    Route::post('/add', [CartController::class, 'addToCart']);
+    Route::get('/', [CartController::class, 'getCartItems']);
+    Route::delete('/{id}', [CartController::class, 'removeCartItem']);
+    Route::delete('/clear', [CartController::class, 'clearCart']);
+    Route::get('/count', [CartController::class, 'getCartCount']);
+    Route::patch('/update/{id}', [CartController::class, 'updateCart']);
+});
 
 
 // Protected routes 
@@ -146,9 +148,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/product/image/{id}', [ProductController::class, 'updateProductImage']);
     Route::put('/product/availability/{id}', [ProductController::class, 'updateProductAvailability']);
     Route::delete('/product/{id}', [ProductController::class, 'deleteProduct']);
-    Route::post('/product/with-availability', [ProductController::class,'createProductWithAvailability']);
-
-
-
+    Route::post('/product/with-availability', [ProductController::class, 'createProductWithAvailability']);
 });
 

@@ -94,24 +94,29 @@ class CategoryController extends Controller
             return response()->json(['success' => false, 'message' => 'Category not found'], 404);
         }
     }
-    public function updateCategory(Request $request, $id)
-    {
-        $user = auth()->user();
-        if (!$user || $user->role !== 'admin') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-        }
-
-        $category = Category::find($id);
-        if (!$category) {
-            return response()->json(['success' => false, 'message' => 'Category not found'], 404);
-        }
-
-        $data = $request->validate([
+   
+        public function updateCategory(Request $request, $id)
+        {
+            $user = auth()->user();
+            
+            if (!$user || $user->role !== 'admin') {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
+            
+        
+            $category = Category::find($id);
+            
+            if (!$category) {
+                return response()->json(['success' => false, 'message' => 'Category not found'], 404);
+            }
+            
+          $data = $request->validate([
             'name' => 'required|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+            ]);
 
-        $fullImageUrl = null;
+            $category->name= $data["name"];
+
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
@@ -124,20 +129,17 @@ class CategoryController extends Controller
             $image->move($destinationPath, $imageName);
 
             $fullImageUrl = url('public/uploads/category/' . $imageName);
-        }
-
-        $category->name = $data['name'];
-        if ($fullImageUrl) {
             $category->image = $fullImageUrl;
         }
-        $category->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Category updated successfully',
-            'data' => $category,
-        ], 200);
-    }
+        
+            $category->save();
+        
+            return response()->json([
+                'success' => true,
+                'message' => 'Category updated successfully',
+                'data' => $category,
+            ]);
+        }
     public function deleteCategory($id)
     {
         $user = auth()->user();

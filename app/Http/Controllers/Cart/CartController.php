@@ -11,133 +11,152 @@ use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
-    public function getOwnerId()
-    {
-        return Auth::id() ?? session()->getId();
-    }
-
+   
     public function addToCart(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'color_id' => 'required|exists:colors,id',
             'size_id' => 'required|exists:sizes,id',
-            'quantity' => 'required|integer|min:1',
+            'quantity' => 'required|integer',
+            'guest_id' => 'nullable|string',
         ]);
 
-        $ownerId = $this->getOwnerId();
-        $isGuest = !Auth::check();
+        $available = Availability::where([
+            'product_id' => $validated['product_id'],
+            'color_id' => $validated['color_id'],
+            'size_id' => $validated['size_id'],
+        ])->exists();
 
-        $productId = $request->product_id;
-        $colorId = $request->color_id;
-        $sizeId = $request->size_id;
-        $quantity = $request->quantity;
+        if (!$available) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not available',
+            ], 404);
+        }
 
-        $availability = Availability::where([
-            'product_id' => $productId,
-            'color_id' => $colorId,
-            'size_id' => $sizeId,
+        $userId = Auth::id();
+        $guestId = $userId ? null : $validated['guest_id'];
+
+        $product = Product::findOrFail($validated['product_id']);
+        $cartItem = CartItem::where([
+            'user_id' => $userId,
+            'guest_id' => $guestId,
+            'product_id' => $validated['product_id'],
+            'color_id' => $validated['color_id'],
+            'size_id' => $validated['size_id'],
         ])->first();
 
-        if (!$availability) {
-            return response()->json(['success' => false, 'message' => 'Product Not Available'], 400);
-        }
-
-        $query = CartItem::where([
-            'product_id' => $productId,
-            'color_id' => $colorId,
-            'size_id' => $sizeId,
-        ]);
-
-        $query->where($isGuest ? 'session_id' : 'user_id', $ownerId);
-        $existingCartItem = $query->first();
-
-        if ($existingCartItem) {
-            $newQuantity = $existingCartItem->quantity + $quantity;
-
-            if ($newQuantity <= 0) {
-                $existingCartItem->delete();
-                return response()->json(['message' => 'Item removed from cart']);
+        if ($cartItem) {
+            $cartItem->quantity += $validated['quantity'];
+            if ($cartItem->quantity < 1) {
+                $cartItem->delete();
+            } else {
+                $cartItem->save();
             }
+        } else {
+            if ($validated['quantity'] > 0) {
+                CartItem::create([
+                    'user_id' => $userId,
+                    'guest_id' => $guestId,
+                    'product_id' => $validated['product_id'],
+                    'color_id' => $validated['color_id'],
+                    'size_id' => $validated['size_id'],
+                    'quantity' => $validated['quantity'],
+                    'price' => $product->price,
 
-            $existingCartItem->update(['quantity' => $newQuantity]);
-            return response()->json(['message' => 'Cart updated', 'item' => $existingCartItem]);
+
+                ]);
+            }
         }
 
-        $product = Product::findOrFail($productId);
-
-        $cartItem = CartItem::create([
-            'user_id' => $isGuest ? null : $ownerId,
-            'session_id' => $isGuest ? $ownerId : null,
-            'product_id' => $productId,
-            'color_id' => $colorId,
-            'size_id' => $sizeId,
-            'quantity' => $quantity,
-            'price' => $product->price,
-        ]);
-
-        return response()->json(['success' => true, 'message' => 'Added to cart', 'item' => $cartItem]);
+        return response()->json(['success' => true, 'message' => 'Cart updated successfully']);
     }
 
-    public function getCartItems()
+    public function getCartItems(Request $request)
     {
-        $ownerId = $this->getOwnerId();
-        $isGuest = !Auth::check();
+        $userId = Auth::id();
+        $guestId = $request->query('guest_id');
 
-        $cartItems = CartItem::with(['product', 'color', 'size'])
-            ->where($isGuest ? 'session_id' : 'user_id', $ownerId)
-            ->get();
+        $cartItems = CartItem::where(function ($query) use ($userId, $guestId) {
+            if ($userId) {
+                $query->where('user_id', $userId);
+            } else {
+                $query->where('guest_id', $guestId);
+            }
+        })->get();  
 
-        return response()->json(['success' => true, 'data' => $cartItems]);
+        return response()->json($cartItems);
     }
 
-    public function removeFromCart($id)
+    public function removeCartItem(Request $request, $id)
     {
-        $ownerId = $this->getOwnerId();
-        $isGuest = !Auth::check();
+        $userId = Auth::id();
+        $guestId = $request->cookie('guest_id');
 
-        $cartItem = CartItem::where('id', $id)
-            ->where($isGuest ? 'session_id' : 'user_id', $ownerId)
-            ->firstOrFail();
+        $item = CartItem::where('id', $id)
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when(!$userId && $guestId, fn($q) => $q->where('guest_id', $guestId))
+            ->first();
 
-        $cartItem->delete();
+        if ($item) {
+            $item->delete();
+            return response()->json(['success' => true, 'message' => 'Item removed']);
+        }
 
-        return response()->json(['success' => true, 'message' => 'Item removed from cart']);
+        return response()->json(['success' => false, 'message' => 'Item not found'], 404);
     }
 
-    public function clearCart()
+    public function clearCart(Request $request)
     {
-        $ownerId = $this->getOwnerId();
-        $isGuest = !Auth::check();
+        $userId = Auth::id();
+        $guestId = $request->cookie('guest_id');
 
-        CartItem::where($isGuest ? 'session_id' : 'user_id', $ownerId)->delete();
+        CartItem::when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when(!$userId && $guestId, fn($q) => $q->where('guest_id', $guestId))
+            ->delete();
 
         return response()->json(['success' => true, 'message' => 'Cart cleared']);
     }
 
-    public function updateCartItem(Request $request, $id)
+    public function getCartCount(Request $request)
     {
-        $request->validate([
-            'quantity' => 'required|integer|min:1',
-        ]);
+        $userId = Auth::id();
+        $guestId = $request->cookie('guest_id');
 
-        $ownerId = $this->getOwnerId();
-        $isGuest = !Auth::check();
+        $count = CartItem::when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when(!$userId && $guestId, fn($q) => $q->where('guest_id', $guestId))
+            ->count();
 
-        $cartItem = CartItem::where('id', $id)
-            ->where($isGuest ? 'session_id' : 'user_id', $ownerId)
-            ->firstOrFail();
-
-        $cartItem->update(['quantity' => $request->quantity]);
-
-        return response()->json(['success' => true, 'message' => 'Cart item updated', 'item' => $cartItem]);
+        return response()->json(['count' => $count]);
     }
 
-    public function getCartItemCount()
+    public function updateCart(Request $request, $id)
     {
-        $ownerId = $this->getOwnerId();
-        $isGuest = !Auth::check();
-        $count = CartItem::where($isGuest ? 'session_id' : 'user_id', $ownerId)->count();
-        return response()->json(['success' => true, 'data' => ['cart_item_count' => $count]]);
+        $request->validate([
+            'quantity' => 'required|integer',
+        ]);
+
+        $userId = Auth::id();
+        $guestId = $request->cookie('guest_id');
+
+        $item = CartItem::where('id', $id)
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when(!$userId && $guestId, fn($q) => $q->where('guest_id', $guestId))
+            ->first();
+
+        if (!$item) {
+            return response()->json(['success' => false, 'message' => 'Item not found'], 404);
+        }
+
+        if ($request->quantity < 1) {
+            $item->delete();
+            return response()->json(['success' => true, 'message' => 'Item removed']);
+        }
+
+        $item->quantity = $request->quantity;
+        $item->save();
+
+        return response()->json(['success' => true, 'message' => 'Quantity updated']);
     }
 }

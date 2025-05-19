@@ -132,22 +132,25 @@ class ProductController extends Controller
             'tags',
             'productImages',
             'availability',
-            'sizeGuide'
+            'sizeGuides'
         ]);
 
-        if ($request->has('category')) {
-            $query->where('category_id', $request->get('category'));
+        // Apply optional filters if present
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->input('category'));
         }
-        if ($request->has('sub-category')) {
-            $query->where('sub_category_id', $request->get('sub-category'));
+
+        if ($request->filled('sub-category')) {
+            $query->where('sub_category_id', $request->input('sub-category'));
         }
 
         $products = $query->get();
+
         return response()->json([
             'success' => true,
             'message' => 'Products retrieved successfully.',
             'data' => $products
-        ], 200);
+        ]);
     }
 
     public function getProductById($id)
@@ -298,30 +301,45 @@ class ProductController extends Controller
                 'care' => 'nullable|string',
                 'category_id' => 'required|exists:categories,id',
                 'sub_category_id' => 'required|exists:sub_categories,id',
-                'tag_ids' => 'array',
-                'tag_ids.*' => 'exists:tags,id',
-                'size_guide_ids' => 'array',
-                'size_guide_ids.*' => 'exists:size_guide,id',
+                'tags' => 'array',
+                'tags.*.name' => 'required|string',
+                'tags.*.description' => 'nullable|string',
+                'size_guides' => 'array',
+                'size_guides.*.name' => 'required|string',
+                'size_guides.*.chest' => 'required|string',
+                'size_guides.*.body' => 'required|string',
                 'availability' => 'required|array',
                 'availability.*.size_id' => 'required|exists:sizes,id',
                 'availability.*.color_id' => 'required|exists:colors,id',
                 'availability.*.quantity' => 'required|integer|min:0',
             ]);
 
-            // Create Product
-            $product = Product::create($validatedData);
+            $productData = collect($validatedData)->only([
+                'name',
+                'description',
+                'fit',
+                'care',
+                'category_id',
+                'sub_category_id'
+            ])->toArray();
 
-            // Attach tags
-            if (!empty($validatedData['tag_ids'])) {
-                $product->tags()->attach($validatedData['tag_ids']);
+            $product = Product::create($productData);
+
+            // Create tags
+            if (!empty($validatedData['tags'])) {
+                foreach ($validatedData['tags'] as $tag) {
+                    $product->tags()->create($tag);
+                }
             }
 
-            // Attach size guides
-            if (!empty($validatedData['size_guide_ids'])) {
-                $product->sizeGuide()->attach($validatedData['size_guide_ids']);
+            // Create size guides
+            if (!empty($validatedData['size_guides'])) {
+                foreach ($validatedData['size_guides'] as $sizeGuide) {
+                    $product->sizeGuides()->create($sizeGuide);
+                }
             }
 
-            // Add availability
+            // Create availability records
             foreach ($validatedData['availability'] as $item) {
                 $product->availability()->create([
                     'size_id' => $item['size_id'],
@@ -333,8 +351,9 @@ class ProductController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Product and availability created successfully.',
-                'product' => $product->load(['availability.color', 'availability.size', 'tags', 'sizeGuide'])
+                'product' => $product->load(['availability.color', 'availability.size', 'tags', 'sizeGuides']),
             ], 201);
+            
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,

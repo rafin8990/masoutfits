@@ -27,7 +27,7 @@ class Product extends Model
 
     public function tags()
     {
-        return $this->belongsToMany(Tag::class, 'product_tag');
+        return $this->hasMany(Tag::class);
     }
 
     public function productImages()
@@ -39,9 +39,9 @@ class Product extends Model
     {
         return $this->hasMany(Availability::class);
     }
-    public function sizeGuide()
+    public function sizeGuides()
     {
-        return $this->belongsToMany(SizeGuide::class, 'product_size_guide');
+        return $this->hasMany(SizeGuide::class,);
     }
 
     public function cartItems()
@@ -57,6 +57,6 @@ class Product extends Model
         'productImages.color',
         'availability.color',
         'availability.size',
-        'sizeGuide'
+        'sizeGuides'
     ];
 }

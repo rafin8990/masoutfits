@@ -9,13 +9,14 @@ class Tag extends Model
     protected $table = 'tags';
 
     protected $fillable = [
+        'product_id',
         'name',
         'description',
     ];
 
-    public function products()
+    public function product()
     {
-        return $this->belongsToMany(Product::class,'product_tag');
+        return $this->belongsTo(Product::class);
     }
 
    
