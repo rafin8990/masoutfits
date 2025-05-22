@@ -12,7 +12,8 @@ class Product extends Model
         'fit',
         'care',
         'category_id',
-        'sub_category_id'
+        'sub_category_id',
+        'price'
     ];
 
     public function category()

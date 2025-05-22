@@ -144,6 +144,7 @@ class ProductController extends Controller
             $query->where('sub_category_id', $request->input('sub-category'));
         }
 
+        $query->orderBy('created_at', 'desc');
         $products = $query->get();
 
         return response()->json([
@@ -301,6 +302,7 @@ class ProductController extends Controller
                 'care' => 'nullable|string',
                 'category_id' => 'required|exists:categories,id',
                 'sub_category_id' => 'required|exists:sub_categories,id',
+                'price'=>'nullable|string',
                 'tags' => 'array',
                 'tags.*.name' => 'required|string',
                 'tags.*.description' => 'nullable|string',
@@ -320,7 +322,8 @@ class ProductController extends Controller
                 'fit',
                 'care',
                 'category_id',
-                'sub_category_id'
+                'sub_category_id',
+                'price'
             ])->toArray();
 
             $product = Product::create($productData);
@@ -353,7 +356,7 @@ class ProductController extends Controller
                 'message' => 'Product and availability created successfully.',
                 'product' => $product->load(['availability.color', 'availability.size', 'tags', 'sizeGuides']),
             ], 201);
-            
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -368,6 +371,97 @@ class ProductController extends Controller
             ], 500);
         }
     }
+
+    public function updateProductWithAvailability(Request $request, $productId)
+    {
+        try {
+            $user = auth()->user();
+            if (!$user || $user->role !== 'admin') {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            $validatedData = $request->validate([
+                'name' => 'nullable|string',
+                'description' => 'nullable|string',
+                'fit' => 'nullable|string',
+                'care' => 'nullable|string',
+                'category_id' => 'required|exists:categories,id',
+                'sub_category_id' => 'required|exists:sub_categories,id',
+                'price'=>'nullable|string',
+                'tags' => 'array',
+                'tags.*.name' => 'required|string',
+                'tags.*.description' => 'nullable|string',
+                'size_guides' => 'array',
+                'size_guides.*.name' => 'required|string',
+                'size_guides.*.chest' => 'required|string',
+                'size_guides.*.body' => 'required|string',
+                'availability' => 'required|array',
+                'availability.*.size_id' => 'required|exists:sizes,id',
+                'availability.*.color_id' => 'required|exists:colors,id',
+                'availability.*.quantity' => 'required|integer|min:0',
+            ]);
+
+            $product = Product::findOrFail($productId);
+
+            $productData = collect($validatedData)->only([
+                'name',
+                'description',
+                'fit',
+                'care',
+                'category_id',
+                'sub_category_id',
+                'price'
+            ])->toArray();
+
+            $product->update($productData);
+
+            // Sync tags
+            $product->tags()->delete();
+            if (!empty($validatedData['tags'])) {
+                foreach ($validatedData['tags'] as $tag) {
+                    $product->tags()->create($tag);
+                }
+            }
+
+            // Sync size guides
+            $product->sizeGuides()->delete();
+            if (!empty($validatedData['size_guides'])) {
+                foreach ($validatedData['size_guides'] as $sizeGuide) {
+                    $product->sizeGuides()->create($sizeGuide);
+                }
+            }
+
+            // Sync availability
+            $product->availability()->delete();
+            foreach ($validatedData['availability'] as $item) {
+                $product->availability()->create([
+                    'size_id' => $item['size_id'],
+                    'color_id' => $item['color_id'],
+                    'quantity' => $item['quantity'],
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product and availability updated successfully.',
+                'product' => $product->load(['availability.color', 'availability.size', 'tags', 'sizeGuides']),
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors(),
+                'message' => 'Validation failed.'
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred. Please try again later.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 
 }

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
-   
+
     public function addToCart(Request $request)
     {
         $validated = $request->validate([
@@ -75,20 +75,24 @@ class CartController extends Controller
 
     public function getCartItems(Request $request)
     {
-        $userId = Auth::id();
+        $userId = $request->query('user_id');
         $guestId = $request->query('guest_id');
 
-        $cartItems = CartItem::where(function ($query) use ($userId, $guestId) {
-            if ($userId) {
-                $query->where('user_id', $userId);
-            } else {
-                $query->where('guest_id', $guestId);
-            }
-        })->get();  
+        $cartItems = CartItem::with(['product', 'color', 'size'])
+            ->when($userId, function ($query) use ($userId) {
+                return $query->where('user_id', $userId);
+            })
+            ->when(!$userId && $guestId, function ($query) use ($guestId) {
+                return $query->where('guest_id', $guestId);
+            })
+            ->get();
 
-        return response()->json($cartItems);
+        return response()->json([
+            'success' => true,
+            'message' => 'Cart items retrieved successfully.',
+            'data' => $cartItems
+        ]);
     }
-
     public function removeCartItem(Request $request, $id)
     {
         $userId = Auth::id();

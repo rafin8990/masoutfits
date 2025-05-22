@@ -79,7 +79,7 @@ Route::prefix('cart')->group(function () {
 // Protected routes 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'getUser']);
-    Route::put('/user', [AuthController::class, 'updateUser']);
+    Route::post('/user', [AuthController::class, 'updateUser']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::delete('/user/{id}', [AuthController::class, 'deleteUser']);
     Route::get('/users', [AuthController::class, 'getAllUsers']);
@@ -145,9 +145,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/availability/{productId}', [ProductController::class, 'addProductAvailability']);
     Route::post('/product/image/{productId}', [ProductController::class, 'addProductImages']);
     Route::put('/product/{id}', [ProductController::class, 'updateProduct']);
-    Route::put('/product/image/{id}', [ProductController::class, 'updateProductImage']);
+    Route::post('/product/image/{id}', [ProductController::class, 'updateProductImage']);
     Route::put('/product/availability/{id}', [ProductController::class, 'updateProductAvailability']);
     Route::delete('/product/{id}', [ProductController::class, 'deleteProduct']);
     Route::post('/product/with-availability', [ProductController::class, 'createProductWithAvailability']);
+    Route::patch('/product/update/with-availability/{id}', [ProductController::class, 'updateProductWithAvailability']);
 });
 
