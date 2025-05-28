@@ -154,6 +154,20 @@ class ProductController extends Controller
         ]);
     }
 
+
+   public function getProductsImages()
+{
+    $products = Product::select('id', 'name')
+        ->with(['productImages:id,product_id,image,color_id'])
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Product images retrieved successfully.',
+        'data' => $products
+    ], 200);
+}
+
     public function getProductById($id)
     {
         $product = Product::with(['category', 'subCategory', 'tags', 'productImages', 'availability', 'sizeGuide'])->findOrFail($id);

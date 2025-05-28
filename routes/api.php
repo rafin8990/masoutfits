@@ -15,6 +15,7 @@ use App\Http\Controllers\Home\SectionOneController;
 use App\Http\Controllers\Home\SectionThreeController;
 use App\Http\Controllers\Home\SectionTwoController;
 use App\Http\Controllers\Home\SliderController;
+use App\Http\Controllers\Order\OrderController;
 use App\Http\Controllers\Product\ProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -63,7 +64,13 @@ Route::get('/size-guide', [SizeGuideController::class, 'getAllSizeGuide']);
 Route::get('/size-guide/{id}', [SizeGuideController::class, 'getSizeGuideById']);
 
 Route::get('/product', [ProductController::class, 'getAllProducts']);
+Route::get('/product/images', [ProductController::class, 'getProductsImages']);
 Route::get('/product/{id}', [ProductController::class, 'getProductById']);
+
+
+Route::post('/place-order',[OrderController::class, 'placeOrder']);
+Route::post('/stripe/webhook', [OrderController::class, 'handleWebhook']);
+
 
 
 Route::prefix('cart')->group(function () {
@@ -145,7 +152,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/availability/{productId}', [ProductController::class, 'addProductAvailability']);
     Route::post('/product/image/{productId}', [ProductController::class, 'addProductImages']);
     Route::put('/product/{id}', [ProductController::class, 'updateProduct']);
-    Route::post('/product/image/{id}', [ProductController::class, 'updateProductImage']);
+    Route::post('/product/update-image/{id}', [ProductController::class, 'updateProductImage']);
     Route::put('/product/availability/{id}', [ProductController::class, 'updateProductAvailability']);
     Route::delete('/product/{id}', [ProductController::class, 'deleteProduct']);
     Route::post('/product/with-availability', [ProductController::class, 'createProductWithAvailability']);

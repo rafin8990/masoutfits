@@ -51,13 +51,13 @@ class Product extends Model
     }
    
 
-    protected $with = [
-        'category',
-        'subCategory',
-        'tags',
-        'productImages.color',
-        'availability.color',
-        'availability.size',
-        'sizeGuides'
-    ];
+    // protected $with = [
+    //     'category',
+    //     'subCategory',
+    //     'tags',
+    //     'productImages.color',
+    //     'availability.color',
+    //     'availability.size',
+    //     'sizeGuides'
+    // ];
 }
