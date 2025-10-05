@@ -31,18 +31,18 @@ class Product extends Model
         return $this->hasMany(Tag::class);
     }
 
-    public function productImages()
-    {
-        return $this->hasMany(ProductImage::class);
-    }
+   public function productImages()
+{
+    return $this->hasMany(ProductImage::class)->with('color');
+}
 
     public function availability()
     {
-        return $this->hasMany(Availability::class);
+        return $this->hasMany(Availability::class)->with(['color', 'size']);
     }
-    public function sizeGuides()
+    public function sizeGuide()
     {
-        return $this->hasMany(SizeGuide::class,);
+        return $this->hasMany(SizeGuide::class);
     }
 
     public function cartItems()

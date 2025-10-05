@@ -66,6 +66,8 @@ Route::get('/size-guide/{id}', [SizeGuideController::class, 'getSizeGuideById'])
 Route::get('/product', [ProductController::class, 'getAllProducts']);
 Route::get('/product/images', [ProductController::class, 'getProductsImages']);
 Route::get('/product/{id}', [ProductController::class, 'getProductById']);
+ Route::delete('/product-images/{id}', [ProductController::class, 'deleteProductImages']);
+Route::post('/product/update-image/{id}', [ProductController::class, 'updateProductImages']);
 
 
 Route::post('/place-order',[OrderController::class, 'placeOrder']);
@@ -95,7 +97,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/change-password', [AuthController::class, 'changePassword']);
 
     Route::post('/sliders', [SliderController::class, 'createSlider']);
-    Route::put('/sliders/{id}', [SliderController::class, 'updateSlider']);
+    Route::post('/sliders/{id}', [SliderController::class, 'updateSlider']);
     Route::delete('/sliders/{id}', [SliderController::class, 'deleteSlider']);
 
     Route::post('/section-one', [SectionOneController::class, 'createSectionOne']);
@@ -125,11 +127,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/footer/{id}', [FooterController::class, 'deleteFooter']);
 
     Route::post('/categories', [CategoryController::class, 'createCategory']);
-    Route::put('/categories/{id}', [CategoryController::class, 'updateCategory']);
+    Route::post('/categories/{id}', [CategoryController::class, 'updateCategory']);
     Route::delete('/categories/{id}', [CategoryController::class, 'deleteCategory']);
 
     Route::post('/sub-categories', [SubCategoryController::class, 'createSubCategory']);
-    Route::put('/sub-categories/{id}', [SubCategoryController::class, 'updateSubCategory']);
+    Route::post('/sub-categories/{id}', [SubCategoryController::class, 'updateSubCategory']);
     Route::delete('/sub-categories/{id}', [SubCategoryController::class, 'deleteSubCategory']);
 
     Route::post('/colors', [ColorsController::class, 'createColor']);
@@ -152,10 +154,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/availability/{productId}', [ProductController::class, 'addProductAvailability']);
     Route::post('/product/image/{productId}', [ProductController::class, 'addProductImages']);
     Route::put('/product/{id}', [ProductController::class, 'updateProduct']);
-    Route::post('/product/update-image/{id}', [ProductController::class, 'updateProductImage']);
+    // Route::post('/product/update-image/{id}', [ProductController::class, 'updateProductImage']);
     Route::put('/product/availability/{id}', [ProductController::class, 'updateProductAvailability']);
     Route::delete('/product/{id}', [ProductController::class, 'deleteProduct']);
     Route::post('/product/with-availability', [ProductController::class, 'createProductWithAvailability']);
-    Route::patch('/product/update/with-availability/{id}', [ProductController::class, 'updateProductWithAvailability']);
+    Route::post('/product/update/with-availability/{id}', [ProductController::class, 'updateProductWithAvailability']);
+  
 });
 
