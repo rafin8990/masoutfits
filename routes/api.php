@@ -137,10 +137,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/footer', [FooterController::class, 'createFooter']);
     Route::put('/footer/{id}', [FooterController::class, 'updateFooter']);
     Route::delete('/footer/{id}', [FooterController::class, 'deleteFooter']);
-
     Route::post('/media-coverage', [MediaCoverageController::class, 'createMediaCoverage']);
     Route::put('/media-coverage/{id}', [MediaCoverageController::class, 'updateMediaCoverage']);
     Route::delete('/media-coverage/{id}', [MediaCoverageController::class, 'deleteMediaCoverage']);
+
 
     Route::post('/categories', [CategoryController::class, 'createCategory']);
     Route::post('/categories/{id}', [CategoryController::class, 'updateCategory']);
