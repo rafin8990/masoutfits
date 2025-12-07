@@ -4,14 +4,16 @@ namespace App\Http\Controllers\Product;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\SizeGuide;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
     public function createProduct(Request $request)
     {
         try {
-            $user = auth()->user();
+            $user = Auth::user();
             if (!$user || $user->role !== 'admin') {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
@@ -20,15 +22,39 @@ class ProductController extends Controller
                 'description' => 'nullable|string',
                 'fit' => 'nullable|string',
                 'care' => 'nullable|string',
-                'category_id' => 'required|exists:categories,id',
-                'sub_category_id' => 'required|exists:sub_categories,id',
+                'category_ids' => 'required|array',
+                'category_ids.*' => 'exists:categories,id',
+                'sub_category_ids' => 'required|array',
+                'sub_category_ids.*' => 'exists:sub_categories,id',
+                'price' => 'nullable|string',
+                'isNew' => 'required|boolean',
+                'discount_price' => 'nullable|string',
+                'discount_amount' => 'nullable|string',
                 'tag_ids' => 'array',
                 'tag_ids.*' => 'exists:tags,id',
                 'size_guide_ids' => 'array',
                 'size_guide_ids.*' => 'exists:size_guide,id',
             ]);
 
-            $product = Product::create($validatedData);
+            $product = Product::create(collect($validatedData)->only([
+                'name',
+                'description',
+                'fit',
+                'care',
+                'price',
+                'isNew',
+                'discount_price',
+                'discount_amount'
+            ])->toArray());
+
+            // Attach multiple categories and subcategories
+            if (!empty($validatedData['category_ids'])) {
+                $product->categories()->attach($validatedData['category_ids']);
+            }
+
+            if (!empty($validatedData['sub_category_ids'])) {
+                $product->subCategories()->attach($validatedData['sub_category_ids']);
+            }
 
             if (!empty($validatedData['tag_ids'])) {
                 $product->tags()->attach($validatedData['tag_ids']);
@@ -60,7 +86,7 @@ class ProductController extends Controller
 
     public function addProductAvailability(Request $request, $productId)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user || $user->role !== 'admin') {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
@@ -87,7 +113,7 @@ class ProductController extends Controller
 
     public function addProductImages(Request $request, $productId)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user || $user->role !== 'admin') {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
@@ -127,21 +153,27 @@ class ProductController extends Controller
     public function getAllProducts(Request $request)
     {
         $query = Product::with([
-            'category',
-            'subCategory',
+            'categories:id,name,image',
+            'subCategories:id,name,image,category_id',
             'tags',
             'productImages',
             'availability',
-            'sizeGuides'
+            'sizeGuide'
         ]);
 
         // Apply optional filters if present
         if ($request->filled('category')) {
-            $query->where('category_id', $request->input('category'));
+            $categoryId = $request->input('category');
+            $query->whereHas('categories', function ($q) use ($categoryId) {
+                $q->where('categories.id', $categoryId);
+            });
         }
 
         if ($request->filled('sub-category')) {
-            $query->where('sub_category_id', $request->input('sub-category'));
+            $subCategoryId = $request->input('sub-category');
+            $query->whereHas('subCategories', function ($q) use ($subCategoryId) {
+                $q->where('sub_categories.id', $subCategoryId);
+            });
         }
 
         $query->orderBy('created_at', 'desc');
@@ -155,22 +187,48 @@ class ProductController extends Controller
     }
 
 
-   public function getProductsImages()
+//   public function getProductsImages()
+// {
+//     $products = Product::select('id', 'name', 'category_id')
+//         ->with(['productImages:id,product_id,image,color_id'])
+//         ->get();
+
+//     return response()->json([
+//         'success' => true,
+//         'message' => 'Product images retrieved successfully.',
+//         'data' => $products
+//     ], 200);
+// }
+
+
+public function getProductsImages()
 {
-    $products = Product::select('id', 'name')
-        ->with(['productImages:id,product_id,image,color_id'])
-        ->get();
+    $products = Product::with([
+        'productImages:id,product_id,image,color_id',
+        'categories:id,name,image',
+        'subCategories:id,name,image,category_id'
+    ])->get();
 
     return response()->json([
         'success' => true,
-        'message' => 'Product images retrieved successfully.',
+        'message' => 'Full product details with images and category retrieved successfully.',
         'data' => $products
     ], 200);
 }
 
+
+
+
     public function getProductById($id)
     {
-        $product = Product::with(['category', 'subCategory', 'tags', 'productImages', 'availability', 'sizeGuide'])->findOrFail($id);
+        $product = Product::with([
+            'categories:id,name,image',
+            'subCategories:id,name,image,category_id',
+            'tags',
+            'productImages.color',
+            'availability',
+            'sizeGuide'
+        ])->findOrFail($id);
         return response()->json([
             'success' => true,
             'message' => 'Product retrieved successfully.',
@@ -180,7 +238,7 @@ class ProductController extends Controller
 
     public function updateProduct(Request $request, $id)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user || $user->role !== 'admin') {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
@@ -190,8 +248,14 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'fit' => 'nullable|string',
             'care' => 'nullable|string',
-            'category_id' => 'required|exists:categories,id',
-            'sub_category_id' => 'required|exists:sub_categories,id',
+            'category_ids' => 'required|array',
+            'category_ids.*' => 'exists:categories,id',
+            'sub_category_ids' => 'required|array',
+            'sub_category_ids.*' => 'exists:sub_categories,id',
+            'price' => 'nullable|string',
+                'isNew' => 'required|boolean',
+            'discount_price' => 'nullable|string',
+            'discount_amount' => 'nullable|string',
             'tag_ids' => 'array',
             'tag_ids.*' => 'exists:tags,id',
             'size_guide_ids' => 'array',
@@ -199,7 +263,25 @@ class ProductController extends Controller
         ]);
 
         $product = Product::findOrFail($id);
-        $product->update($validatedData);
+        $product->update(collect($validatedData)->only([
+            'name',
+            'description',
+            'fit',
+            'care',
+            'price',
+            'isNew',
+            'discount_price',
+            'discount_amount'
+        ])->toArray());
+
+        // Sync multiple categories and subcategories
+        if (!empty($validatedData['category_ids'])) {
+            $product->categories()->sync($validatedData['category_ids']);
+        }
+
+        if (!empty($validatedData['sub_category_ids'])) {
+            $product->subCategories()->sync($validatedData['sub_category_ids']);
+        }
 
         if (!empty($validatedData['tag_ids'])) {
             $product->tags()->sync($validatedData['tag_ids']);
@@ -219,7 +301,7 @@ class ProductController extends Controller
 
     public function updateProductAvailability(Request $request, $productId)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user || $user->role !== 'admin') {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
@@ -246,47 +328,133 @@ class ProductController extends Controller
         return response()->json(['success' => true, 'message' => 'Availability updated successfully', 'data' => $product], 200);
     }
 
+    // public function updateProductImages(Request $request, $productId)
+    // {
+       
+
+    //     $validated = $request->validate([
+    //         'images' => 'required|array',
+    //         'images.*.id' => 'required|exists:product_images,id',
+    //         'images.*.color_id' => 'required|exists:colors,id',
+    //         'images.*.image' => 'required|array',
+    //         'images.*.image.*' => 'required|file|mimes:jpg,jpeg,png,webp|max:2048',
+    //     ]);
+
+    //     $product = Product::findOrFail($productId);
+
+    //     foreach ($validated['images'] as $index => $imageGroup) {
+    //         $colorId = $imageGroup['color_id'];
+    //         $imageFiles = $request->file("images.$index.image");
+
+    //         foreach ($imageFiles as $imageFile) {
+    //             $fileName = time() . '_' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
+    //             $destinationPath = public_path('product_images');
+    //             $imageFile->move($destinationPath, $fileName);
+
+    //             $url = asset('public/product_images/' . $fileName);
+
+    //             $productImage = $product->productImages()->findOrFail($imageGroup['id']);
+    //             $productImage->update([
+    //                 'color_id' => $colorId,
+    //                 'image' => $url,
+    //             ]);
+    //         }
+    //     }
+
+    //     return response()->json(['success' => true, 'message' => 'Product images updated successfully.', 'data' => $product], 200);
+    // }
+    
+    
     public function updateProductImages(Request $request, $productId)
-    {
-        $user = auth()->user();
-        if (!$user || $user->role !== 'admin') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-        }
+{
+    $validated = $request->validate([
+        'images' => 'required|array',
+        'images.*.color_id' => 'required|exists:colors,id',
+        'images.*.id' => 'nullable|exists:product_images,id',
+        'images.*.image' => 'required|array',
+        'images.*.image.*' => 'required|file|mimes:jpg,jpeg,png,webp|max:2048',
+    ]);
 
-        $validated = $request->validate([
-            'images' => 'required|array',
-            'images.*.id' => 'required|exists:product_images,id',
-            'images.*.color_id' => 'required|exists:colors,id',
-            'images.*.image' => 'required|array',
-            'images.*.image.*' => 'required|file|mimes:jpg,jpeg,png,webp|max:2048',
-        ]);
+    $product = Product::findOrFail($productId);
 
-        $product = Product::findOrFail($productId);
+    foreach ($validated['images'] as $index => $imageGroup) {
+        $colorId = $imageGroup['color_id'];
+        $imageFiles = $request->file("images.$index.image");
 
-        foreach ($validated['images'] as $index => $imageGroup) {
-            $colorId = $imageGroup['color_id'];
-            $imageFiles = $request->file("images.$index.image");
+        foreach ($imageFiles as $imageFile) {
+            $fileName = time() . '_' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
+            $destinationPath = public_path('product_images');
+            $imageFile->move($destinationPath, $fileName);
 
-            foreach ($imageFiles as $imageFile) {
-                $fileName = time() . '_' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
-                $destinationPath = public_path('product_images');
-                $imageFile->move($destinationPath, $fileName);
+            $url = asset('public/product_images/' . $fileName);
 
-                $url = asset('public/product_images/' . $fileName);
-
-                $productImage = $product->productImages()->findOrFail($imageGroup['id']);
-                $productImage->update([
+            // If id exists → update existing product image
+            if (!empty($imageGroup['id'])) {
+                $productImage = $product->productImages()->find($imageGroup['id']);
+                if ($productImage) {
+                    $productImage->update([
+                        'color_id' => $colorId,
+                        'image' => $url,
+                    ]);
+                } else {
+                    // If id not found, create a new one
+                    $product->productImages()->create([
+                        'color_id' => $colorId,
+                        'image' => $url,
+                    ]);
+                }
+            } else {
+                // No id provided → create a new product image
+                $product->productImages()->create([
                     'color_id' => $colorId,
                     'image' => $url,
                 ]);
             }
         }
-
-        return response()->json(['success' => true, 'message' => 'Product images updated successfully.', 'data' => $product], 200);
     }
+
+    // optionally reload product with images
+    $product->load('productImages');
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Product images updated or created successfully.',
+        'data' => $product
+    ], 200);
+}
+
+    
+    
+    public function deleteProductImages(Request $request, $productId)
+    {
+
+        $validated = $request->validate([
+            'image_ids' => 'required|array',
+            'image_ids.*' => 'required|exists:product_images,id',
+        ]);
+
+        $product = Product::findOrFail($productId);
+
+        foreach ($validated['image_ids'] as $imageId) {
+            $productImage = $product->productImages()->findOrFail($imageId);
+            
+            // Delete the physical file from storage
+            $imagePath = public_path('product_images/' . basename($productImage->image));
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+            
+            // Delete the database record
+            $productImage->delete();
+        }
+
+        return response()->json(['success' => true, 'message' => 'Product images deleted successfully.', 'data' => $product], 200);
+    }
+    
+    
     public function deleteProduct($id)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user || $user->role !== 'admin') {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
@@ -304,7 +472,7 @@ class ProductController extends Controller
     public function createProductWithAvailability(Request $request)
     {
         try {
-            $user = auth()->user();
+            $user = Auth::user();
             if (!$user || $user->role !== 'admin') {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
@@ -314,9 +482,14 @@ class ProductController extends Controller
                 'description' => 'nullable|string',
                 'fit' => 'nullable|string',
                 'care' => 'nullable|string',
-                'category_id' => 'required|exists:categories,id',
-                'sub_category_id' => 'required|exists:sub_categories,id',
-                'price'=>'nullable|string',
+            'category_ids' => 'required|array',
+            'category_ids.*' => 'exists:categories,id',
+            'sub_category_ids' => 'required|array',
+            'sub_category_ids.*' => 'exists:sub_categories,id',
+                'price' => 'nullable|string',
+                'isNew' => 'required|boolean',
+                'discount_price' => 'nullable|string',
+                'discount_amount' => 'nullable|string',
                 'tags' => 'array',
                 'tags.*.name' => 'required|string',
                 'tags.*.description' => 'nullable|string',
@@ -335,9 +508,10 @@ class ProductController extends Controller
                 'description',
                 'fit',
                 'care',
-                'category_id',
-                'sub_category_id',
-                'price'
+                'price',
+                'isNew',
+                'discount_price',
+                'discount_amount'
             ])->toArray();
 
             $product = Product::create($productData);
@@ -352,7 +526,7 @@ class ProductController extends Controller
             // Create size guides
             if (!empty($validatedData['size_guides'])) {
                 foreach ($validatedData['size_guides'] as $sizeGuide) {
-                    $product->sizeGuides()->create($sizeGuide);
+                    $product->sizeGuide()->create($sizeGuide);
                 }
             }
 
@@ -368,7 +542,7 @@ class ProductController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Product and availability created successfully.',
-                'product' => $product->load(['availability.color', 'availability.size', 'tags', 'sizeGuides']),
+                'product' => $product->load(['availability.color', 'availability.size', 'tags', 'sizeGuide']),
             ], 201);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -389,7 +563,7 @@ class ProductController extends Controller
     public function updateProductWithAvailability(Request $request, $productId)
     {
         try {
-            $user = auth()->user();
+            $user = Auth::user();
             if (!$user || $user->role !== 'admin') {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
@@ -401,7 +575,10 @@ class ProductController extends Controller
                 'care' => 'nullable|string',
                 'category_id' => 'required|exists:categories,id',
                 'sub_category_id' => 'required|exists:sub_categories,id',
-                'price'=>'nullable|string',
+                'price' => 'nullable|string',
+                'isNew' => 'required|boolean',
+                'discount_price' => 'nullable|string',
+                'discount_amount' => 'nullable|string',
                 'tags' => 'array',
                 'tags.*.name' => 'required|string',
                 'tags.*.description' => 'nullable|string',
@@ -422,9 +599,10 @@ class ProductController extends Controller
                 'description',
                 'fit',
                 'care',
-                'category_id',
-                'sub_category_id',
-                'price'
+                'price',
+                'isNew',
+                'discount_price',
+                'discount_amount'
             ])->toArray();
 
             $product->update($productData);
@@ -438,10 +616,10 @@ class ProductController extends Controller
             }
 
             // Sync size guides
-            $product->sizeGuides()->delete();
+            $product->sizeGuide()->delete();
             if (!empty($validatedData['size_guides'])) {
                 foreach ($validatedData['size_guides'] as $sizeGuide) {
-                    $product->sizeGuides()->create($sizeGuide);
+                    $product->sizeGuide()->create($sizeGuide);
                 }
             }
 
@@ -458,7 +636,7 @@ class ProductController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Product and availability updated successfully.',
-                'product' => $product->load(['availability.color', 'availability.size', 'tags', 'sizeGuides']),
+                'product' => $product->load(['availability.color', 'availability.size', 'tags', 'sizeGuide']),
             ], 200);
 
         } catch (\Illuminate\Validation\ValidationException $e) {

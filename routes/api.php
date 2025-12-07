@@ -15,7 +15,9 @@ use App\Http\Controllers\Home\SectionOneController;
 use App\Http\Controllers\Home\SectionThreeController;
 use App\Http\Controllers\Home\SectionTwoController;
 use App\Http\Controllers\Home\SliderController;
+use App\Http\Controllers\MediaCoverage\MediaCoverageController;
 use App\Http\Controllers\Order\OrderController;
+use App\Http\Controllers\OurStory\OurstoryController;
 use App\Http\Controllers\Product\ProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,8 +44,14 @@ Route::get('/contacts/{id}', [ContactController::class, 'getContactById']);
 Route::get('/about', [AboutController::class, 'getAllAbout']);
 Route::get('/about/{id}', [AboutController::class, 'getAboutById']);
 
+Route::get('/our-story', [OurstoryController::class, 'getAllOurStory']);
+Route::get('/our-story/{id}', [OurstoryController::class, 'getOurStoryById']);
+
 Route::get('/footer', [FooterController::class, 'getAllFooters']);
 Route::get('/footer/{id}', [FooterController::class, 'getFooterById']);
+
+Route::get('/media-coverage', [MediaCoverageController::class, 'getAllMediaCoverage']);
+Route::get('/media-coverage/{id}', [MediaCoverageController::class, 'getMediaCoverageById']);
 
 Route::get('/categories', [CategoryController::class, 'getAllCategories']);
 Route::get('/categories/{id}', [CategoryController::class, 'getCategoryById']);
@@ -66,6 +74,8 @@ Route::get('/size-guide/{id}', [SizeGuideController::class, 'getSizeGuideById'])
 Route::get('/product', [ProductController::class, 'getAllProducts']);
 Route::get('/product/images', [ProductController::class, 'getProductsImages']);
 Route::get('/product/{id}', [ProductController::class, 'getProductById']);
+ Route::delete('/product-images/{id}', [ProductController::class, 'deleteProductImages']);
+Route::post('/product/update-image/{id}', [ProductController::class, 'updateProductImages']);
 
 
 Route::post('/place-order',[OrderController::class, 'placeOrder']);
@@ -95,20 +105,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/change-password', [AuthController::class, 'changePassword']);
 
     Route::post('/sliders', [SliderController::class, 'createSlider']);
-    Route::put('/sliders/{id}', [SliderController::class, 'updateSlider']);
+    Route::post('/sliders/{id}', [SliderController::class, 'updateSlider']);
     Route::delete('/sliders/{id}', [SliderController::class, 'deleteSlider']);
 
     Route::post('/section-one', [SectionOneController::class, 'createSectionOne']);
-    Route::put('/section-one/{id}', [SectionOneController::class, 'updateSectionOne']);
+    Route::post('/section-one/{id}', [SectionOneController::class, 'updateSectionOne']);
     Route::delete('/section-one/{id}', [SectionOneController::class, 'deleteSectionOne']);
     Route::delete('/section-one', [SectionOneController::class, 'deleteAllSectionOne']);
 
     Route::post('/section-two', [SectionTwoController::class, 'createSectionTwo']);
-    Route::put('/section-two/{id}', [SectionTwoController::class, 'updateSectionTwo']);
+    Route::post('/section-two/{id}', [SectionTwoController::class, 'updateSectionTwo']);
     Route::delete('/section-two/{id}', [SectionTwoController::class, 'destroy']);
 
     Route::post('/section-three', [SectionThreeController::class, 'createSectionThree']);
-    Route::put('/section-three/{id}', [SectionThreeController::class, 'updateSectionThree']);
+    Route::post('/section-three/{id}', [SectionThreeController::class, 'updateSectionThree']);
     Route::delete('/section-three/{id}', [SectionThreeController::class, 'deleteSectionThree']);
 
     Route::post('/contacts', [ContactController::class, 'createContact']);
@@ -119,17 +129,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/about/{id}', [AboutController::class, 'updateAbout']);
     Route::delete('/about/{id}', [AboutController::class, 'deleteAbout']);
 
+    Route::post('/our-story', [OurstoryController::class, 'createOurStory']);
+    Route::post('/our-story/{id}', [OurstoryController::class, 'updateOurStory']);
+    Route::delete('/our-story/{id}', [OurstoryController::class, 'deleteOurStory']);
+
 
     Route::post('/footer', [FooterController::class, 'createFooter']);
     Route::put('/footer/{id}', [FooterController::class, 'updateFooter']);
     Route::delete('/footer/{id}', [FooterController::class, 'deleteFooter']);
 
+    Route::post('/media-coverage', [MediaCoverageController::class, 'createMediaCoverage']);
+    Route::put('/media-coverage/{id}', [MediaCoverageController::class, 'updateMediaCoverage']);
+    Route::delete('/media-coverage/{id}', [MediaCoverageController::class, 'deleteMediaCoverage']);
+
     Route::post('/categories', [CategoryController::class, 'createCategory']);
-    Route::put('/categories/{id}', [CategoryController::class, 'updateCategory']);
+    Route::post('/categories/{id}', [CategoryController::class, 'updateCategory']);
     Route::delete('/categories/{id}', [CategoryController::class, 'deleteCategory']);
 
     Route::post('/sub-categories', [SubCategoryController::class, 'createSubCategory']);
-    Route::put('/sub-categories/{id}', [SubCategoryController::class, 'updateSubCategory']);
+    Route::post('/sub-categories/{id}', [SubCategoryController::class, 'updateSubCategory']);
     Route::delete('/sub-categories/{id}', [SubCategoryController::class, 'deleteSubCategory']);
 
     Route::post('/colors', [ColorsController::class, 'createColor']);
@@ -152,10 +170,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/availability/{productId}', [ProductController::class, 'addProductAvailability']);
     Route::post('/product/image/{productId}', [ProductController::class, 'addProductImages']);
     Route::put('/product/{id}', [ProductController::class, 'updateProduct']);
-    Route::post('/product/update-image/{id}', [ProductController::class, 'updateProductImage']);
+    // Route::post('/product/update-image/{id}', [ProductController::class, 'updateProductImage']);
     Route::put('/product/availability/{id}', [ProductController::class, 'updateProductAvailability']);
     Route::delete('/product/{id}', [ProductController::class, 'deleteProduct']);
     Route::post('/product/with-availability', [ProductController::class, 'createProductWithAvailability']);
-    Route::patch('/product/update/with-availability/{id}', [ProductController::class, 'updateProductWithAvailability']);
+    Route::post('/product/update/with-availability/{id}', [ProductController::class, 'updateProductWithAvailability']);
+  
 });
 

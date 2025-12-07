@@ -90,7 +90,7 @@ class SectionThreeController extends Controller
 
             $validatedData = $request->validate([
                 'title' => 'nullable|string|max:255',
-                'description' => 'nullable|string|max:1000',
+                'description' => 'nullable|string',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 

@@ -11,19 +11,20 @@ class Product extends Model
         'description',
         'fit',
         'care',
-        'category_id',
-        'sub_category_id',
-        'price'
+        'discount_price',
+        'discount_amount',
+        'price',
+        'isNew'
     ];
 
-    public function category()
+    public function categories()
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsToMany(Category::class, 'category_product');
     }
 
-    public function subCategory()
+    public function subCategories()
     {
-        return $this->belongsTo(SubCategory::class);
+        return $this->belongsToMany(SubCategory::class, 'product_sub_category');
     }
 
     public function tags()
@@ -31,18 +32,18 @@ class Product extends Model
         return $this->hasMany(Tag::class);
     }
 
-    public function productImages()
-    {
-        return $this->hasMany(ProductImage::class);
-    }
+   public function productImages()
+{
+    return $this->hasMany(ProductImage::class)->with('color');
+}
 
     public function availability()
     {
-        return $this->hasMany(Availability::class);
+        return $this->hasMany(Availability::class)->with(['color', 'size']);
     }
-    public function sizeGuides()
+    public function sizeGuide()
     {
-        return $this->hasMany(SizeGuide::class,);
+        return $this->hasMany(SizeGuide::class);
     }
 
     public function cartItems()

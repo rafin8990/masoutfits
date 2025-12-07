@@ -21,6 +21,29 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## API Documentation
+
+This project now ships with an OpenAPI 3.0 specification that captures every
+route defined in `routes/api.php`, including authentication requirements, request
+payloads, and shared schemas. The spec lives at `docs/openapi.yaml`.
+
+To preview it locally:
+
+1. Ensure the backend is running (for example `php artisan serve`).
+2. Install a viewer such as [Redocly CLI](https://github.com/Redocly/redocly-cli) if you don't already have one:
+   ```bash
+   npm install -g @redocly/cli
+   ```
+3. Launch the preview against the spec file:
+   ```bash
+   redocly preview-docs docs/openapi.yaml
+   ```
+   Redocly will print a local URL where you can explore the interactive docs.
+
+An interactive Swagger UI is also available at `http://localhost:8000/docs`
+which reads from the same spec via `route('swagger.spec')`. Deployments can
+expose the same route for shared documentation with zero extra tooling.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
