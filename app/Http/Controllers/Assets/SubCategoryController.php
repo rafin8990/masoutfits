@@ -19,7 +19,8 @@ class SubCategoryController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'category_id' => 'required|exists:categories,id',
+                'category_ids' => 'required|array|min:1',
+                'category_ids.*' => 'exists:categories,id',
             ]);
 
             if ($request->hasFile('image')) {
@@ -36,7 +37,12 @@ class SubCategoryController extends Controller
                 $validated['image'] = url('public/uploads/subcategory/' . $imageName);
             }
 
+            $categoryIds = $validated['category_ids'];
+            unset($validated['category_ids']);
+
             $subCategory = SubCategory::create($validated);
+            $subCategory->categories()->sync($categoryIds);
+            $subCategory->load('categories');
 
             return response()->json([
                 'success' => true,
@@ -67,15 +73,17 @@ class SubCategoryController extends Controller
             $subCategoryName = $request->query('subCategory');
             $searchTerm = $request->query('searchTerm');
 
-            $query = SubCategory::with('category');
+            $query = SubCategory::with('categories');
 
             if ($categoryName) {
-                $query->whereHas('category', function ($q) use ($categoryName) {
+                $query->whereHas('categories', function ($q) use ($categoryName) {
                     $q->where('name', $categoryName);
                 });
             }
             if ($categoryId) {
-                $query->where('category_id', $categoryId);
+                $query->whereHas('categories', function ($q) use ($categoryId) {
+                    $q->where('categories.id', $categoryId);
+                });
             }
 
 
@@ -105,7 +113,7 @@ class SubCategoryController extends Controller
 
     public function getSubCategoryById($id)
     {
-        $subCategory = SubCategory::find($id);
+        $subCategory = SubCategory::with('categories')->find($id);
         if ($subCategory) {
             return response()->json([
                 'success' => true,
@@ -133,7 +141,8 @@ class SubCategoryController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'category_id' => 'required|exists:categories,id',
+                'category_ids' => 'required|array|min:1',
+                'category_ids.*' => 'exists:categories,id',
             ]);
 
             if ($request->hasFile('image')) {
@@ -157,7 +166,12 @@ class SubCategoryController extends Controller
                 $validated['image'] = url('public/uploads/subcategory/' . $imageName);
             }
 
+            $categoryIds = $validated['category_ids'];
+            unset($validated['category_ids']);
+
             $subCategory->update($validated);
+            $subCategory->categories()->sync($categoryIds);
+            $subCategory->load('categories');
 
             return response()->json([
                 'success' => true,

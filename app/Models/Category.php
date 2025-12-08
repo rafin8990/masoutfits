@@ -15,7 +15,7 @@ class Category extends Model
 
     public function subCategories()
     {
-        return $this->hasMany(SubCategory::class);
+        return $this->belongsToMany(SubCategory::class, 'category_sub_category');
     }
     public function sizeGuide()
     {

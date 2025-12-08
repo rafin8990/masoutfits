@@ -22,10 +22,8 @@ class ProductController extends Controller
                 'description' => 'nullable|string',
                 'fit' => 'nullable|string',
                 'care' => 'nullable|string',
-                'category_ids' => 'required|array',
-                'category_ids.*' => 'exists:categories,id',
-                'sub_category_ids' => 'required|array',
-                'sub_category_ids.*' => 'exists:sub_categories,id',
+                'category_id' => 'required|exists:categories,id',
+                'sub_category_id' => 'required|exists:sub_categories,id',
                 'price' => 'nullable|string',
                 'isNew' => 'required|boolean',
                 'discount_price' => 'nullable|string',
@@ -47,14 +45,9 @@ class ProductController extends Controller
                 'discount_amount'
             ])->toArray());
 
-            // Attach multiple categories and subcategories
-            if (!empty($validatedData['category_ids'])) {
-                $product->categories()->attach($validatedData['category_ids']);
-            }
-
-            if (!empty($validatedData['sub_category_ids'])) {
-                $product->subCategories()->attach($validatedData['sub_category_ids']);
-            }
+            // Attach single category and subcategory
+            $product->categories()->sync([$validatedData['category_id']]);
+            $product->subCategories()->sync([$validatedData['sub_category_id']]);
 
             if (!empty($validatedData['tag_ids'])) {
                 $product->tags()->attach($validatedData['tag_ids']);
@@ -62,6 +55,18 @@ class ProductController extends Controller
 
             if (!empty($validatedData['size_guide_ids'])) {
                 $product->sizeGuide()->attach($validatedData['size_guide_ids']);
+            }
+
+            $product->load(['categories', 'subCategories']);
+            
+            // Transform categories and subCategories from arrays to single objects
+            if ($product->categories && $product->categories->count() > 0) {
+                $product->category = $product->categories->first();
+                unset($product->categories);
+            }
+            if ($product->subCategories && $product->subCategories->count() > 0) {
+                $product->subCategory = $product->subCategories->first();
+                unset($product->subCategories);
             }
 
             return response()->json([
@@ -152,32 +157,77 @@ class ProductController extends Controller
 
     public function getAllProducts(Request $request)
     {
-        $query = Product::with([
+        $query = Product::select('products.*');
+
+        // Apply optional filters if present (before eager loading for better performance)
+        if ($request->has('category') && $request->input('category') !== null && $request->input('category') !== 'all') {
+            $categoryId = (int) $request->input('category');
+            // Check both pivot table and direct foreign key for backward compatibility
+            $query->where(function ($q) use ($categoryId) {
+                $q->whereHas('categories', function ($subQ) use ($categoryId) {
+                    $subQ->where('categories.id', $categoryId);
+                })->orWhere('products.category_id', $categoryId);
+            });
+        }
+
+        if ($request->has('sub-category') && $request->input('sub-category') !== null) {
+            $subCategoryId = (int) $request->input('sub-category');
+            // Check both pivot table and direct foreign key for backward compatibility
+            $query->where(function ($q) use ($subCategoryId) {
+                $q->whereHas('subCategories', function ($subQ) use ($subCategoryId) {
+                    $subQ->where('sub_categories.id', $subCategoryId);
+                })->orWhere('products.sub_category_id', $subCategoryId);
+            });
+        }
+
+        $query->orderBy('products.created_at', 'desc');
+        
+        // Eager load relationships after filtering
+        $products = $query->with([
             'categories:id,name,image',
-            'subCategories:id,name,image,category_id',
+            'subCategories:id,name,image',
             'tags',
             'productImages',
             'availability',
             'sizeGuide'
-        ]);
+        ])->get();
+        
+        // Debug: Log query and count for troubleshooting
+        // \Log::info('Product Query', ['sql' => $query->toSql(), 'bindings' => $query->getBindings(), 'count' => $products->count()]);
 
-        // Apply optional filters if present
-        if ($request->filled('category')) {
-            $categoryId = $request->input('category');
-            $query->whereHas('categories', function ($q) use ($categoryId) {
-                $q->where('categories.id', $categoryId);
-            });
-        }
-
-        if ($request->filled('sub-category')) {
-            $subCategoryId = $request->input('sub-category');
-            $query->whereHas('subCategories', function ($q) use ($subCategoryId) {
-                $q->where('sub_categories.id', $subCategoryId);
-            });
-        }
-
-        $query->orderBy('created_at', 'desc');
-        $products = $query->get();
+        // Transform categories and subCategories from arrays to single objects
+        // Also sync from direct foreign keys to pivot tables if needed
+        $products->transform(function ($product) {
+            // Handle categories
+            if ($product->categories && $product->categories->count() > 0) {
+                $product->category = $product->categories->first();
+                unset($product->categories);
+            } elseif ($product->category_id) {
+                // If pivot table is empty but direct foreign key exists, load from direct key
+                $category = \App\Models\Category::find($product->category_id);
+                if ($category) {
+                    $product->category = $category;
+                    // Sync to pivot table for future queries
+                    $product->categories()->syncWithoutDetaching([$product->category_id]);
+                }
+            }
+            
+            // Handle subCategories
+            if ($product->subCategories && $product->subCategories->count() > 0) {
+                $product->subCategory = $product->subCategories->first();
+                unset($product->subCategories);
+            } elseif ($product->sub_category_id) {
+                // If pivot table is empty but direct foreign key exists, load from direct key
+                $subCategory = \App\Models\SubCategory::find($product->sub_category_id);
+                if ($subCategory) {
+                    $product->subCategory = $subCategory;
+                    // Sync to pivot table for future queries
+                    $product->subCategories()->syncWithoutDetaching([$product->sub_category_id]);
+                }
+            }
+            
+            return $product;
+        });
 
         return response()->json([
             'success' => true,
@@ -206,8 +256,21 @@ public function getProductsImages()
     $products = Product::with([
         'productImages:id,product_id,image,color_id',
         'categories:id,name,image',
-        'subCategories:id,name,image,category_id'
+        'subCategories:id,name,image'
     ])->get();
+
+    // Transform categories and subCategories from arrays to single objects
+    $products->transform(function ($product) {
+        if ($product->categories && $product->categories->count() > 0) {
+            $product->category = $product->categories->first();
+            unset($product->categories);
+        }
+        if ($product->subCategories && $product->subCategories->count() > 0) {
+            $product->subCategory = $product->subCategories->first();
+            unset($product->subCategories);
+        }
+        return $product;
+    });
 
     return response()->json([
         'success' => true,
@@ -223,12 +286,23 @@ public function getProductsImages()
     {
         $product = Product::with([
             'categories:id,name,image',
-            'subCategories:id,name,image,category_id',
+            'subCategories:id,name,image',
             'tags',
             'productImages.color',
             'availability',
             'sizeGuide'
         ])->findOrFail($id);
+
+        // Transform categories and subCategories from arrays to single objects
+        if ($product->categories && $product->categories->count() > 0) {
+            $product->category = $product->categories->first();
+            unset($product->categories);
+        }
+        if ($product->subCategories && $product->subCategories->count() > 0) {
+            $product->subCategory = $product->subCategories->first();
+            unset($product->subCategories);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Product retrieved successfully.',
@@ -248,10 +322,8 @@ public function getProductsImages()
             'description' => 'nullable|string',
             'fit' => 'nullable|string',
             'care' => 'nullable|string',
-            'category_ids' => 'required|array',
-            'category_ids.*' => 'exists:categories,id',
-            'sub_category_ids' => 'required|array',
-            'sub_category_ids.*' => 'exists:sub_categories,id',
+            'category_id' => 'required|exists:categories,id',
+            'sub_category_id' => 'required|exists:sub_categories,id',
             'price' => 'nullable|string',
                 'isNew' => 'required|boolean',
             'discount_price' => 'nullable|string',
@@ -274,14 +346,9 @@ public function getProductsImages()
             'discount_amount'
         ])->toArray());
 
-        // Sync multiple categories and subcategories
-        if (!empty($validatedData['category_ids'])) {
-            $product->categories()->sync($validatedData['category_ids']);
-        }
-
-        if (!empty($validatedData['sub_category_ids'])) {
-            $product->subCategories()->sync($validatedData['sub_category_ids']);
-        }
+        // Sync single category and subcategory
+        $product->categories()->sync([$validatedData['category_id']]);
+        $product->subCategories()->sync([$validatedData['sub_category_id']]);
 
         if (!empty($validatedData['tag_ids'])) {
             $product->tags()->sync($validatedData['tag_ids']);
@@ -291,6 +358,17 @@ public function getProductsImages()
             $product->sizeGuide()->sync($validatedData['size_guide_ids']);
         }
 
+        $product->load(['categories', 'subCategories']);
+        
+        // Transform categories and subCategories from arrays to single objects
+        if ($product->categories && $product->categories->count() > 0) {
+            $product->category = $product->categories->first();
+            unset($product->categories);
+        }
+        if ($product->subCategories && $product->subCategories->count() > 0) {
+            $product->subCategory = $product->subCategories->first();
+            unset($product->subCategories);
+        }
 
         return response()->json([
             'success' => true,
@@ -482,10 +560,8 @@ public function getProductsImages()
                 'description' => 'nullable|string',
                 'fit' => 'nullable|string',
                 'care' => 'nullable|string',
-            'category_ids' => 'required|array',
-            'category_ids.*' => 'exists:categories,id',
-            'sub_category_ids' => 'required|array',
-            'sub_category_ids.*' => 'exists:sub_categories,id',
+                'category_id' => 'required|exists:categories,id',
+                'sub_category_id' => 'required|exists:sub_categories,id',
                 'price' => 'nullable|string',
                 'isNew' => 'required|boolean',
                 'discount_price' => 'nullable|string',
@@ -516,6 +592,10 @@ public function getProductsImages()
 
             $product = Product::create($productData);
 
+            // Attach single category and subcategory
+            $product->categories()->sync([$validatedData['category_id']]);
+            $product->subCategories()->sync([$validatedData['sub_category_id']]);
+
             // Create tags
             if (!empty($validatedData['tags'])) {
                 foreach ($validatedData['tags'] as $tag) {
@@ -539,10 +619,22 @@ public function getProductsImages()
                 ]);
             }
 
+            $product->load(['categories', 'subCategories', 'availability.color', 'availability.size', 'tags', 'sizeGuide']);
+            
+            // Transform categories and subCategories from arrays to single objects
+            if ($product->categories && $product->categories->count() > 0) {
+                $product->category = $product->categories->first();
+                unset($product->categories);
+            }
+            if ($product->subCategories && $product->subCategories->count() > 0) {
+                $product->subCategory = $product->subCategories->first();
+                unset($product->subCategories);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Product and availability created successfully.',
-                'product' => $product->load(['availability.color', 'availability.size', 'tags', 'sizeGuide']),
+                'product' => $product,
             ], 201);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -579,18 +671,23 @@ public function getProductsImages()
                 'isNew' => 'required|boolean',
                 'discount_price' => 'nullable|string',
                 'discount_amount' => 'nullable|string',
-                'tags' => 'array',
-                'tags.*.name' => 'required|string',
+                'tags' => 'nullable|array',
+                'tags.*.name' => 'required_with:tags|string',
                 'tags.*.description' => 'nullable|string',
-                'size_guides' => 'array',
-                'size_guides.*.name' => 'required|string',
-                'size_guides.*.chest' => 'required|string',
-                'size_guides.*.body' => 'required|string',
+                'size_guides' => 'nullable|array',
+                'size_guides.*.name' => 'required_with:size_guides|string',
+                'size_guides.*.chest' => 'required_with:size_guides|string',
+                'size_guides.*.body' => 'required_with:size_guides|string',
                 'availability' => 'required|array',
                 'availability.*.size_id' => 'required|exists:sizes,id',
                 'availability.*.color_id' => 'required|exists:colors,id',
                 'availability.*.quantity' => 'required|integer|min:0',
             ]);
+            
+            // Convert isNew string to boolean if needed
+            if (isset($validatedData['isNew']) && !is_bool($validatedData['isNew'])) {
+                $validatedData['isNew'] = filter_var($validatedData['isNew'], FILTER_VALIDATE_BOOLEAN);
+            }
 
             $product = Product::findOrFail($productId);
 
@@ -606,6 +703,10 @@ public function getProductsImages()
             ])->toArray();
 
             $product->update($productData);
+
+            // Sync single category and subcategory
+            $product->categories()->sync([$validatedData['category_id']]);
+            $product->subCategories()->sync([$validatedData['sub_category_id']]);
 
             // Sync tags
             $product->tags()->delete();
@@ -633,10 +734,22 @@ public function getProductsImages()
                 ]);
             }
 
+            $product->load(['categories', 'subCategories', 'availability.color', 'availability.size', 'tags', 'sizeGuide']);
+            
+            // Transform categories and subCategories from arrays to single objects
+            if ($product->categories && $product->categories->count() > 0) {
+                $product->category = $product->categories->first();
+                unset($product->categories);
+            }
+            if ($product->subCategories && $product->subCategories->count() > 0) {
+                $product->subCategory = $product->subCategories->first();
+                unset($product->subCategories);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Product and availability updated successfully.',
-                'product' => $product->load(['availability.color', 'availability.size', 'tags', 'sizeGuide']),
+                'product' => $product,
             ], 200);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
