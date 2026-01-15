@@ -14,7 +14,9 @@ class Product extends Model
         'discount_price',
         'discount_amount',
         'price',
-        'isNew'
+        'isNew',
+        'size_column_name_one',
+        'size_column_name_two'
     ];
 
     public function categories()

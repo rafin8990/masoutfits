@@ -28,6 +28,8 @@ class ProductController extends Controller
                 'isNew' => 'required|boolean',
                 'discount_price' => 'nullable|string',
                 'discount_amount' => 'nullable|string',
+                'size_column_name_one' => 'nullable|string',
+                'size_column_name_two' => 'nullable|string',
                 'tag_ids' => 'array',
                 'tag_ids.*' => 'exists:tags,id',
                 'size_guide_ids' => 'array',
@@ -42,7 +44,9 @@ class ProductController extends Controller
                 'price',
                 'isNew',
                 'discount_price',
-                'discount_amount'
+                'discount_amount',
+                'size_column_name_one',
+                'size_column_name_two'
             ])->toArray());
 
             // Attach single category and subcategory
@@ -328,6 +332,8 @@ public function getProductsImages()
                 'isNew' => 'required|boolean',
             'discount_price' => 'nullable|string',
             'discount_amount' => 'nullable|string',
+            'size_column_name_one' => 'nullable|string',
+            'size_column_name_two' => 'nullable|string',
             'tag_ids' => 'array',
             'tag_ids.*' => 'exists:tags,id',
             'size_guide_ids' => 'array',
@@ -343,7 +349,9 @@ public function getProductsImages()
             'price',
             'isNew',
             'discount_price',
-            'discount_amount'
+            'discount_amount',
+            'size_column_name_one',
+            'size_column_name_two'
         ])->toArray());
 
         // Sync single category and subcategory
@@ -566,6 +574,8 @@ public function getProductsImages()
                 'isNew' => 'required|boolean',
                 'discount_price' => 'nullable|string',
                 'discount_amount' => 'nullable|string',
+                'size_column_name_one' => 'nullable|string',
+                'size_column_name_two' => 'nullable|string',
                 'tags' => 'array',
                 'tags.*.name' => 'required|string',
                 'tags.*.description' => 'nullable|string',
@@ -587,7 +597,9 @@ public function getProductsImages()
                 'price',
                 'isNew',
                 'discount_price',
-                'discount_amount'
+                'discount_amount',
+                'size_column_name_one',
+                'size_column_name_two'
             ])->toArray();
 
             $product = Product::create($productData);
@@ -671,6 +683,8 @@ public function getProductsImages()
                 'isNew' => 'required|boolean',
                 'discount_price' => 'nullable|string',
                 'discount_amount' => 'nullable|string',
+                'size_column_name_one' => 'nullable|string',
+                'size_column_name_two' => 'nullable|string',
                 'tags' => 'nullable|array',
                 'tags.*.name' => 'required_with:tags|string',
                 'tags.*.description' => 'nullable|string',
@@ -699,7 +713,9 @@ public function getProductsImages()
                 'price',
                 'isNew',
                 'discount_price',
-                'discount_amount'
+                'discount_amount',
+                'size_column_name_one',
+                'size_column_name_two'
             ])->toArray();
 
             $product->update($productData);
